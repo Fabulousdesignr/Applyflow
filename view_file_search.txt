@@ -1,0 +1,79 @@
+Created At: 2026-05-27T23:32:16Z
+Completed At: 2026-05-27T23:32:16Z
+File Path: `file:///c:/Users/Fabulous/Desktop/Job%20tracker/src/database/seedData.js`
+Total Lines: 627
+Total Bytes: 30304
+Showing lines 1 to 627
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: // Seed data for Applyflow CRM
+2: // Seeded from research documents: "Global Remote Design Talent Search" & "Global Talent Sweep"
+3: // Optimised for Nigerian mid-level product designer (WAT timezone)
+4: 
+5: export const seedOpportunities = [
+6:   {
+7:     id: "opp-001",
+8:     company_name: "Ghost",
+9:     role_title: "Product Designer",
+10:     country: "Remote Worldwide",
+11:     company_type: "SaaS",
+12:     company_size: "11-50",
+13:     remote_status: "Fully Remote",
+14:     global_remote_friendly: "Yes",
+15:     mid_entry_friendly: "Yes",
+16:     ai_workflow_mentioned: "Cursor, v0, LLMs for front-end coding support",
+17:     key_tools_mentioned: "Figma, HTML & CSS, React (Bonus)",
+18:     salary_estimate: "$80,000 – $110,000",
+19:     date_posted: "Q2 2026",
+20:     hiring_freshness: "Active Hiring",
+21:     wat_compatibility: "Perfect",
+22:     career_page: "https://careers.ghost.org",
+23:     application_link: "https://careers.ghost.org/product-designer-2/en/apply",
+24:     linkedin_page: "https://linkedin.com/company/ghost-foundation",
+25:     founder_hr_name: "John O'Nolan (CEO), Hannah Wolfe (CTO)",
+26:     outreach_method: "Direct Apply / Personal Email Pitch",
+27:     why_i_have_a_chance: "Ghost evaluates talent entirely through paid, collaborative trial projects (10-20 hours) rather than traditional CV/pedigree screening. Perfectly aligned with WAT timezone.",
+28:     portfolio_advice: "Showcase clean component systems, a strong design-to-code workflow, and documentation. Highlight your ability to write HTML/CSS code.",
+29:     application_emphasi
+<truncated 29773 bytes>
+ion density, and interactive payment forms.",
+588:     status: "Not Started",
+589:     priority: "High",
+590:     notes: "Outstanding financial platform for startups. Hires remote workers and pays extremely high competitive compensation.",
+591:     follow_up_date: "",
+592:     applied_date: "",
+593:     interview_stage: ""
+594:   },
+595:   {
+596:     id: "opp-020",
+597:     company_name: "Flow Unbounded",
+598:     role_title: "Webflow Growth Designer",
+599:     country: "United States",
+600:     company_type: "No-Code Studio",
+601:     company_size: "1-10",
+602:     remote_status: "Fully Remote",
+603:     global_remote_friendly: "Yes",
+604:     mid_entry_friendly: "Yes",
+605:     ai_workflow_mentioned: "Figma AI, Relume builder",
+606:     key_tools_mentioned: "Figma, Webflow, Client Onboarding layouts",
+607:     salary_estimate: "$40,000 – $65,000",
+608:     date_posted: "May 2026",
+609:     hiring_freshness: "Active",
+610:     wat_compatibility: "High",
+611:     career_page: "https://flownbound.com",
+612:     application_link: "https://www.flowroles.com/webflow-agencies",
+613:     linkedin_page: "https://linkedin.com/company/flowunbounded",
+614:     founder_hr_name: "N/A",
+615:     outreach_method: "Direct Apply / LinkedIn Outreach",
+616:     why_i_have_a_chance: "Small agile team launching startups' landing pages in Webflow. Values visual polish, responsive typography, and fast turnaround.",
+617:     portfolio_advice: "Highlight premium visual interactions, custom grid structures, Webflow code integrations, and landing conversions.",
+618:     application_emphasis: "High visual polish, typography contrast, interaction transitions, and fast execution speeds.",
+619:     status: "Not Started",
+620:     priority: "Medium",
+621:     notes: "Fast-growing Webflow agency. Simple hiring process without massive corporate red tape.",
+622:     follow_up_date: "",
+623:     applied_date: "",
+624:     interview_stage: ""
+625:   }
+626: ];
+627: 
+The above content shows the entire, complete file contents of the requested file.
