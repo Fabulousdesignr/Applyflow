@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, startTransition } from 'react';
 import { 
   getOpportunities, 
   saveOpportunity, 
@@ -52,19 +52,21 @@ export default function App() {
     }
   };
 
-  // CRUD Actions
-  const handleSaveOpportunity = async (opp) => {
+  // CRUD Actions — wrapped in useCallback for stable references + startTransition for non-blocking UI
+  const handleSaveOpportunity = useCallback(async (opp) => {
     try {
       const saved = await saveOpportunity(opp);
-      setOpportunities(prev => {
-        const index = prev.findIndex(item => item.id === saved.id);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = saved;
-          return updated;
-        } else {
-          return [saved, ...prev];
-        }
+      startTransition(() => {
+        setOpportunities(prev => {
+          const index = prev.findIndex(item => item.id === saved.id);
+          if (index >= 0) {
+            const updated = [...prev];
+            updated[index] = saved;
+            return updated;
+          } else {
+            return [saved, ...prev];
+          }
+        });
       });
       // If the currently open drawer opportunity is being edited, sync the drawer state
       if (selectedOpp && selectedOpp.id === saved.id) {
@@ -73,19 +75,21 @@ export default function App() {
     } catch (e) {
       console.error("Error saving opportunity:", e);
     }
-  };
+  }, [selectedOpp]);
 
-  const handleDeleteOpportunity = async (id) => {
+  const handleDeleteOpportunity = useCallback(async (id) => {
     try {
       await deleteOpportunity(id);
-      setOpportunities(prev => prev.filter(item => item.id !== id));
+      startTransition(() => {
+        setOpportunities(prev => prev.filter(item => item.id !== id));
+      });
       if (selectedOpp && selectedOpp.id === id) {
         setSelectedOpp(null);
       }
     } catch (e) {
       console.error("Error deleting opportunity:", e);
     }
-  };
+  }, [selectedOpp]);
 
   // Batch import from Uploader
   const handleImportRows = async (rows) => {

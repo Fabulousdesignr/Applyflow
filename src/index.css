@@ -1150,6 +1150,27 @@ input, select, textarea, button {
 }
 
 @media (max-width: 768px) {
+  /* Global Adjustments */
+  body {
+    font-size: 14px; /* Increase base font size */
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .panel-header {
+    font-size: 14px; /* Slightly larger panel headers */
+  }
+
   /* Mobile Sidebar Container Wrappers */
   .sidebar-container-mobile-wrapper {
     position: absolute;
@@ -1191,8 +1212,17 @@ input, select, textarea, button {
   }
 
   /* Compact Dashboard Panels */
+  .dashboard-view {
+    padding: 12px;
+  }
+  
   .metrics-row {
     grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important; /* Proper spacing */
+  }
+
+  .metric-card-value {
+    font-size: 26px; /* Larger numbers on mobile */
   }
   
   .dashboard-sections {
@@ -1222,16 +1252,35 @@ input, select, textarea, button {
   /* Filters wrap on mobile screens */
   .grid-filters-row {
     height: auto !important;
-    padding: 8px !important;
+    padding: 12px 16px !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 12px !important;
   }
   
   .filters-left {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 6px !important;
+    gap: 8px !important;
+  }
+
+  .filter-presets-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+    padding-bottom: 4px;
+    width: 100%;
+  }
+
+  .filter-presets-scroll::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .filter-presets-scroll > button {
+    flex-shrink: 0; /* Prevent pill squashing */
   }
   
   .search-input-wrapper {
@@ -1244,6 +1293,114 @@ input, select, textarea, button {
   
   .btn-primary {
     width: 100% !important;
+    height: 36px !important; /* Taller primary buttons */
+    font-size: 14px;
+  }
+
+  /* --- TABLE TO CARD REFACTOR FOR MOBILE --- */
+  .grid-wrapper {
+    padding: 12px;
+  }
+  
+  .spreadsheet-table, .spreadsheet-table tbody, .spreadsheet-table tr, .spreadsheet-table td {
+    display: block;
+    width: 100%;
+  }
+  
+  .spreadsheet-table thead {
+    display: none; /* Hide headers */
+  }
+  
+  .grid-row {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    height: auto !important;
+    background-color: var(--bg-secondary) !important;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  .grid-row.selected {
+    background-color: var(--accent-blue-glow) !important;
+    border-color: var(--accent-blue);
+  }
+  
+  .grid-cell {
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible;
+  }
+  
+  .grid-cell:hover {
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  /* Specific Column Overrides for Card Layout */
+  .col-company {
+    width: 100% !important;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+    order: 1;
+  }
+  
+  .col-role {
+    width: 100% !important;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    order: 2;
+  }
+  
+  .cell-checkbox {
+    position: absolute !important;
+    top: 16px;
+    right: 16px;
+    width: auto !important;
+    z-index: 10;
+    order: 0;
+    background: transparent !important;
+  }
+
+  .cell-checkbox input {
+    width: 18px;
+    height: 18px;
+  }
+  
+  /* Hide less critical columns */
+  .grid-cell:not(.col-company):not(.col-role):not(.col-status):not(.col-score):not(.col-actions):not(.cell-checkbox) {
+    display: none !important;
+  }
+  
+  /* Bottom secondary info row container simulation */
+  .col-status {
+    order: 3;
+    display: flex;
+    align-items: center;
+    margin-right: 12px;
+  }
+  
+  .col-score {
+    order: 4;
+    display: flex;
+    align-items: center;
+  }
+  
+  .col-actions {
+    order: 5;
+    margin-left: auto; /* Push to right */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
   }
 }
 

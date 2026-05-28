@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   Search, 
   ArrowUpDown, 
@@ -72,56 +72,60 @@ export default function SpreadsheetGrid({
     setSelectedIds([]);
   }, [opportunities]);
 
-  // Process rows through filters and sorting
-  let filteredRows = opportunities.filter(item => {
-    // 1. Full text search
-    const query = search.toLowerCase();
-    const matchesSearch = 
-      item.company_name.toLowerCase().includes(query) ||
-      item.role_title.toLowerCase().includes(query) ||
-      (item.country && item.country.toLowerCase().includes(query)) ||
-      (item.key_tools_mentioned && item.key_tools_mentioned.toLowerCase().includes(query)) ||
-      (item.ai_workflow_mentioned && item.ai_workflow_mentioned.toLowerCase().includes(query));
+  // Process rows through filters and sorting (memoized to avoid recomputing on every keystroke/focus change)
+  const filteredRows = useMemo(() => {
+    let rows = opportunities.filter(item => {
+      // 1. Full text search
+      const query = search.toLowerCase();
+      const matchesSearch = 
+        item.company_name.toLowerCase().includes(query) ||
+        item.role_title.toLowerCase().includes(query) ||
+        (item.country && item.country.toLowerCase().includes(query)) ||
+        (item.key_tools_mentioned && item.key_tools_mentioned.toLowerCase().includes(query)) ||
+        (item.ai_workflow_mentioned && item.ai_workflow_mentioned.toLowerCase().includes(query));
 
-    // 2. Select dropdown filters
-    const matchesType = typeFilter === 'All' || item.company_type === typeFilter;
-    const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
-    const matchesPriority = priorityFilter === 'All' || item.priority === priorityFilter;
+      // 2. Select dropdown filters
+      const matchesType = typeFilter === 'All' || item.company_type === typeFilter;
+      const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+      const matchesPriority = priorityFilter === 'All' || item.priority === priorityFilter;
 
-    // 3. Saved Filter Presets
-    let matchesPreset = true;
-    if (activeFilterPreset === 'wat_perfect') {
-      matchesPreset = String(item.wat_compatibility).toLowerCase().includes('perfect');
-    } else if (activeFilterPreset === 'high_score') {
-      matchesPreset = item.compatibility_score >= 80;
-    } else if (activeFilterPreset === 'active_interview') {
-      matchesPreset = item.status === 'Interview';
-    } else if (activeFilterPreset === 'ai_native') {
-      const ai = String(item.ai_workflow_mentioned || '').toLowerCase();
-      matchesPreset = ai.includes('cursor') || ai.includes('v0') || ai.includes('claude') || ai.includes('lovable');
-    }
-
-    return matchesSearch && matchesType && matchesStatus && matchesPriority && matchesPreset;
-  });
-
-  // Sort rows
-  if (sortField) {
-    filteredRows.sort((a, b) => {
-      let valA = a[sortField] || '';
-      let valB = b[sortField] || '';
-
-      if (sortField === 'compatibility_score') {
-        return sortAsc ? valA - valB : valB - valA;
+      // 3. Saved Filter Presets
+      let matchesPreset = true;
+      if (activeFilterPreset === 'wat_perfect') {
+        matchesPreset = String(item.wat_compatibility).toLowerCase().includes('perfect');
+      } else if (activeFilterPreset === 'high_score') {
+        matchesPreset = item.compatibility_score >= 80;
+      } else if (activeFilterPreset === 'active_interview') {
+        matchesPreset = item.status === 'Interview';
+      } else if (activeFilterPreset === 'ai_native') {
+        const ai = String(item.ai_workflow_mentioned || '').toLowerCase();
+        matchesPreset = ai.includes('cursor') || ai.includes('v0') || ai.includes('claude') || ai.includes('lovable');
       }
 
-      valA = String(valA).toLowerCase();
-      valB = String(valB).toLowerCase();
-
-      if (valA < valB) return sortAsc ? -1 : 1;
-      if (valA > valB) return sortAsc ? 1 : -1;
-      return 0;
+      return matchesSearch && matchesType && matchesStatus && matchesPriority && matchesPreset;
     });
-  }
+
+    // Sort rows
+    if (sortField) {
+      rows.sort((a, b) => {
+        let valA = a[sortField] || '';
+        let valB = b[sortField] || '';
+
+        if (sortField === 'compatibility_score') {
+          return sortAsc ? valA - valB : valB - valA;
+        }
+
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+
+        if (valA < valB) return sortAsc ? -1 : 1;
+        if (valA > valB) return sortAsc ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return rows;
+  }, [opportunities, search, typeFilter, statusFilter, priorityFilter, activeFilterPreset, sortField, sortAsc]);
 
   // Keyboard navigation listener
   useEffect(() => {
@@ -321,29 +325,33 @@ export default function SpreadsheetGrid({
     }
   };
 
-  // Mass Updates
+  // Mass Updates — batched to avoid N sequential localStorage round-trips
   const handleBulkStatusChange = async (newStatus) => {
+    const updates = [];
     for (const id of selectedIds) {
       const opp = opportunities.find(o => o.id === id);
       if (opp) {
-        opp.status = newStatus;
+        const updated = { ...opp, status: newStatus };
         if (newStatus === 'Applied' && !opp.applied_date) {
-          opp.applied_date = new Date().toISOString().substring(0, 10);
+          updated.applied_date = new Date().toISOString().substring(0, 10);
         }
-        await onSaveRow(opp);
+        updates.push(updated);
       }
     }
+    // Save all at once using Promise.all instead of sequential awaits
+    await Promise.all(updates.map(u => onSaveRow(u)));
     setSelectedIds([]);
   };
 
   const handleBulkPriorityChange = async (newPriority) => {
+    const updates = [];
     for (const id of selectedIds) {
       const opp = opportunities.find(o => o.id === id);
       if (opp) {
-        opp.priority = newPriority;
-        await onSaveRow(opp);
+        updates.push({ ...opp, priority: newPriority });
       }
     }
+    await Promise.all(updates.map(u => onSaveRow(u)));
     setSelectedIds([]);
   };
 
@@ -383,7 +391,7 @@ export default function SpreadsheetGrid({
         <div className="filters-left">
           
           {/* Preset Pill Selectors */}
-          <div style={{ display: 'flex', gap: '4px', marginRight: '12px' }}>
+          <div className="filter-presets-scroll" style={{ marginRight: '12px' }}>
             {filterPresets.map(preset => (
               <button
                 key={preset.id}

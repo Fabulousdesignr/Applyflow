@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   X, 
   ExternalLink, 
@@ -18,10 +18,27 @@ export default function DetailSidePanel({
 }) {
   const [activeTab, setActiveTab] = useState('specs');
   const [formData, setFormData] = useState({ ...opportunity });
+  const saveTimerRef = useRef(null);
+  const latestFormRef = useRef(formData);
+
+  // Keep ref in sync so the cleanup effect always has the latest data
+  useEffect(() => {
+    latestFormRef.current = formData;
+  }, [formData]);
+
+  // Flush any pending debounced save on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        onSave(latestFormRef.current);
+      }
+    };
+  }, []);
 
   if (!opportunity) return null;
 
-  // Handle local form edits
+  // Handle local form edits — update local state instantly, debounce the expensive save
   const handleFieldChange = (field, value) => {
     const updated = { ...formData, [field]: value };
     // Automatically re-calculate score if relevant field changes
@@ -36,7 +53,32 @@ export default function DetailSidePanel({
       updated.compatibility_score = calculateCompatibilityScore(updated);
     }
     setFormData(updated);
-    // Propagate changes up to App state immediately
+
+    // Debounce the save: only persist after 400ms of inactivity
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      onSave(updated);
+      saveTimerRef.current = null;
+    }, 400);
+  };
+
+  // For select/dropdown changes, save immediately (user expects instant feedback)
+  const handleSelectFieldChange = (field, value) => {
+    const updated = { ...formData, [field]: value };
+    if ([
+      'wat_compatibility', 
+      'company_size', 
+      'global_remote_friendly', 
+      'ai_workflow_mentioned', 
+      'mid_entry_friendly', 
+      'outreach_method'
+    ].includes(field)) {
+      updated.compatibility_score = calculateCompatibilityScore(updated);
+    }
+    setFormData(updated);
+    // Selects save immediately — no debounce needed since user clicks once
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = null;
     onSave(updated);
   };
 
@@ -158,7 +200,7 @@ export default function DetailSidePanel({
                   <label className="form-label">Company Type</label>
                   <select 
                     value={formData.company_type || 'SaaS'}
-                    onChange={(e) => handleFieldChange('company_type', e.target.value)}
+                    onChange={(e) => handleSelectFieldChange('company_type', e.target.value)}
                     className="form-select-styled"
                   >
                     <option value="AI Startup">AI Startup</option>
@@ -196,7 +238,7 @@ export default function DetailSidePanel({
                   <label className="form-label">WAT Compatibility</label>
                   <select 
                     value={formData.wat_compatibility || 'Perfect'}
-                    onChange={(e) => handleFieldChange('wat_compatibility', e.target.value)}
+                    onChange={(e) => handleSelectFieldChange('wat_compatibility', e.target.value)}
                     className="form-select-styled"
                   >
                     <option value="Perfect">Perfect WAT (Lagos overlap)</option>
@@ -352,7 +394,7 @@ export default function DetailSidePanel({
                   <label className="form-label">Status</label>
                   <select 
                     value={formData.status || 'Not Started'}
-                    onChange={(e) => handleFieldChange('status', e.target.value)}
+                    onChange={(e) => handleSelectFieldChange('status', e.target.value)}
                     className="form-select-styled"
                   >
                     <option value="Not Started">Not Started</option>
@@ -370,7 +412,7 @@ export default function DetailSidePanel({
                   <label className="form-label">Priority</label>
                   <select 
                     value={formData.priority || 'Medium'}
-                    onChange={(e) => handleFieldChange('priority', e.target.value)}
+                    onChange={(e) => handleSelectFieldChange('priority', e.target.value)}
                     className="form-select-styled"
                   >
                     <option value="High">High</option>
@@ -418,7 +460,7 @@ export default function DetailSidePanel({
                   <label className="form-label">Outreach Method</label>
                   <select 
                     value={formData.outreach_method || 'Direct Apply'}
-                    onChange={(e) => handleFieldChange('outreach_method', e.target.value)}
+                    onChange={(e) => handleSelectFieldChange('outreach_method', e.target.value)}
                     className="form-select-styled"
                   >
                     <option value="Direct Apply">Direct Site Submission</option>
@@ -433,7 +475,7 @@ export default function DetailSidePanel({
                 <label className="form-label">Active Interview Stage</label>
                 <select 
                   value={formData.interview_stage || ''}
-                  onChange={(e) => handleFieldChange('interview_stage', e.target.value)}
+                  onChange={(e) => handleSelectFieldChange('interview_stage', e.target.value)}
                   className="form-select-styled"
                 >
                   <option value="">No Active Interview</option>
