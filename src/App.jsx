@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import SpreadsheetGrid from './components/SpreadsheetGrid';
 import CategoriesGrid from './components/CategoriesGrid';
 import UploadArea from './components/UploadArea';
+import ResearchEngine from './components/ResearchEngine';
 import DetailSidePanel from './components/DetailSidePanel';
 import SettingsModal from './components/SettingsModal';
 import { Sparkles, SlidersHorizontal, Cloud, Menu } from 'lucide-react';
@@ -103,6 +104,11 @@ export default function App() {
     }
   };
 
+  // Single import from Research Engine (with optimistic list update)
+  const handleImportOpportunity = useCallback(async (opp) => {
+    await handleSaveOpportunity(opp);
+  }, [handleSaveOpportunity]);
+
   // Preset categories routing bridge
   const handleSelectCategoryPreset = (categoryId) => {
     setCurrentTab('database');
@@ -171,6 +177,7 @@ export default function App() {
             <span className="header-title">
               {currentTab === 'dashboard' && 'Operations Dashboard'}
               {currentTab === 'database' && 'Opportunities Spreadsheet'}
+              {currentTab === 'research' && 'AI Research Engine'}
               {currentTab === 'categories' && 'Research Categories'}
               {currentTab === 'upload' && 'AI Document Parser'}
             </span>
@@ -227,6 +234,13 @@ export default function App() {
                 onOpenDrawer={(opp) => setSelectedOpp(opp)}
                 selectedOpp={selectedOpp}
                 setSelectedOpp={setSelectedOpp}
+              />
+            )}
+            {currentTab === 'research' && (
+              <ResearchEngine
+                opportunities={opportunities}
+                onImportOpportunity={handleImportOpportunity}
+                onOpenSettings={() => setIsSettingsOpen(true)}
               />
             )}
             {currentTab === 'categories' && (

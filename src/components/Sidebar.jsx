@@ -5,7 +5,7 @@ import {
   Tags, 
   CloudUpload, 
   Settings, 
-  LogOut,
+  Radar,
   Sparkles,
   TrendingUp
 } from 'lucide-react';
@@ -26,6 +26,7 @@ export default function Sidebar({
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'database', label: 'Opportunities', icon: TableProperties, count: total },
+    { id: 'research', label: 'Research', icon: Radar },
     { id: 'categories', label: 'Categories', icon: Tags },
     { id: 'upload', label: 'AI Parse & Import', icon: CloudUpload },
   ];
