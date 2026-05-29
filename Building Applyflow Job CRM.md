@@ -133,19 +133,17 @@ You can also view a quick summary of the work here: [walkthrough.md](file:///C:/
 
 ### User Input
 
-***** This is the APi key
+[API key redacted — never store keys in chat logs or committed files]
 
 ### Planner Response
 
-Thank you! Since the API key needs to be securely stored in your own browser's local storage (rather than hardcoded directly into the codebase, which can be a security risk if you ever push this code to GitHub), here is how you can apply it right now:
+Thank you! API keys must be stored securely via environment variables (`.env.local`) or browser local storage — never hardcoded in the codebase or committed to GitHub.
 
 1. Open your running application at **[http://localhost:5173](http://localhost:5173)**
-2. Click the **Settings** icon (usually a gear or database icon) in the navigation menu.
-3. Scroll down to the **Generative AI API Keys** section.
-4. Paste `AIzaSyDd6iC8Jn-SSa7zbOye5MlkoUBDqZdpdjw` into the **Google Gemini API Key** field.
-5. Click **Save Developer Configurations**.
+2. Copy `.env.example` to `.env.local` and set `VITE_GEMINI_API_KEY`, **or** use **Settings** → **Gemini API Key** (local storage only).
+3. Click **Save Developer Configurations** if using Settings.
 
-Once you do that, your app will be fully weaponized with Gemini. You can drag and drop any new research files (`.txt`, `.csv`, etc.) into the **Upload Area**, and it will use your key to automatically read the document and extract the job opportunities!
+Once configured, drag and drop research files into the **Upload Area** or use the **Research** page for AI-powered job discovery.
 
 ### User Input
 

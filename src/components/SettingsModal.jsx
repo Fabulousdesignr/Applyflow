@@ -16,6 +16,15 @@ import {
   migrateLocalToSupabase 
 } from '../database/db';
 import { testGeminiConnection, isGeminiConfigured } from '../research/researchService';
+import { getEnvKeySource, isEnvKey } from '../config/env';
+
+function EnvLockedHint() {
+  return (
+    <p style={{ fontSize: '10px', color: '#34d399', marginTop: '4px' }}>
+      Set via <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>.env.local</code> (VITE_*). Not stored in browser.
+    </p>
+  );
+}
 
 export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
   const [settings, setSettings] = useState({
@@ -45,6 +54,7 @@ export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
 
   if (!isOpen) return null;
 
+  const envSources = getEnvKeySource();
   const geminiConnected = isGeminiConfigured(settings);
 
   const handleFieldChange = (field, val) => {
@@ -119,7 +129,7 @@ export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
 
         <div className="modal-body">
           <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Configure database endpoints and API credentials. All inputs are saved in local browser storage (and sync to Supabase when configured).
+            Configure API credentials via <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>.env.local</code> (recommended) or local browser storage. Never commit real keys to git.
           </p>
 
           {/* Gemini — Research Engine */}
@@ -148,12 +158,14 @@ export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
               <label className="form-label">Gemini API Key</label>
               <input 
                 type="password" 
-                placeholder="AIzaSy..."
-                value={settings.geminiApiKey || ''}
+                placeholder={isEnvKey('geminiApiKey') ? 'Configured via VITE_GEMINI_API_KEY' : 'Set VITE_GEMINI_API_KEY in .env.local'}
+                value={isEnvKey('geminiApiKey') ? '••••••••••••••••' : (settings.geminiApiKey || '')}
                 onChange={(e) => handleFieldChange('geminiApiKey', e.target.value)}
+                disabled={isEnvKey('geminiApiKey')}
                 className="form-input"
-                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: isEnvKey('geminiApiKey') ? 0.7 : 1 }}
               />
+              {envSources.geminiApiKey === 'environment' && <EnvLockedHint />}
             </div>
 
             <button 
@@ -192,24 +204,29 @@ export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
               <label className="form-label">Supabase URL</label>
               <input 
                 type="text" 
-                placeholder="https://your-project-id.supabase.co"
-                value={settings.supabaseUrl || ''}
+                placeholder={isEnvKey('supabaseUrl') ? 'Configured via VITE_SUPABASE_URL' : 'https://your-project-id.supabase.co'}
+                value={isEnvKey('supabaseUrl') ? settings.supabaseUrl : (settings.supabaseUrl || '')}
                 onChange={(e) => handleFieldChange('supabaseUrl', e.target.value)}
+                disabled={isEnvKey('supabaseUrl')}
+                readOnly={isEnvKey('supabaseUrl')}
                 className="form-input"
-                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: isEnvKey('supabaseUrl') ? 0.7 : 1 }}
               />
+              {envSources.supabaseUrl === 'environment' && <EnvLockedHint />}
             </div>
 
             <div className="form-group">
               <label className="form-label">Supabase Public Anon Key</label>
               <input 
                 type="password" 
-                placeholder="eyJHbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                value={settings.supabaseAnonKey || ''}
+                placeholder={isEnvKey('supabaseAnonKey') ? 'Configured via VITE_SUPABASE_ANON_KEY' : 'Public anon key'}
+                value={isEnvKey('supabaseAnonKey') ? '••••••••••••••••' : (settings.supabaseAnonKey || '')}
                 onChange={(e) => handleFieldChange('supabaseAnonKey', e.target.value)}
+                disabled={isEnvKey('supabaseAnonKey')}
                 className="form-input"
-                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: isEnvKey('supabaseAnonKey') ? 0.7 : 1 }}
               />
+              {envSources.supabaseAnonKey === 'environment' && <EnvLockedHint />}
             </div>
 
             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -261,24 +278,28 @@ export default function SettingsModal({ isOpen, onClose, onSyncComplete }) {
               <label className="form-label">Anthropic Claude API Key</label>
               <input 
                 type="password" 
-                placeholder="sk-ant-api03-..."
-                value={settings.claudeApiKey || ''}
+                placeholder={isEnvKey('claudeApiKey') ? 'Configured via VITE_ANTHROPIC_API_KEY' : 'Optional'}
+                value={isEnvKey('claudeApiKey') ? '••••••••••••••••' : (settings.claudeApiKey || '')}
                 onChange={(e) => handleFieldChange('claudeApiKey', e.target.value)}
+                disabled={isEnvKey('claudeApiKey')}
                 className="form-input"
-                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: isEnvKey('claudeApiKey') ? 0.7 : 1 }}
               />
+              {envSources.claudeApiKey === 'environment' && <EnvLockedHint />}
             </div>
 
             <div className="form-group">
               <label className="form-label">OpenAI API Key</label>
               <input 
                 type="password" 
-                placeholder="sk-proj-..."
-                value={settings.openaiApiKey || ''}
+                placeholder={isEnvKey('openaiApiKey') ? 'Configured via VITE_OPENAI_API_KEY' : 'Optional'}
+                value={isEnvKey('openaiApiKey') ? '••••••••••••••••' : (settings.openaiApiKey || '')}
                 onChange={(e) => handleFieldChange('openaiApiKey', e.target.value)}
+                disabled={isEnvKey('openaiApiKey')}
                 className="form-input"
-                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', opacity: isEnvKey('openaiApiKey') ? 0.7 : 1 }}
               />
+              {envSources.openaiApiKey === 'environment' && <EnvLockedHint />}
             </div>
           </div>
         </div>

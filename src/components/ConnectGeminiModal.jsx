@@ -18,7 +18,7 @@ export default function ConnectGeminiModal({ isOpen, onClose, onOpenSettings }) 
         </div>
         <div className="modal-body">
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            Connect your Gemini API key first to run AI-powered job research. Keys are stored locally in your browser.
+            Connect your Gemini API key first. Set <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>VITE_GEMINI_API_KEY</code> in <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>.env.local</code>, or add it in Settings.
           </p>
         </div>
         <div className="modal-footer">

@@ -1,5 +1,6 @@
 // Database Controller & Scoring Logic for Applyflow
 import { seedOpportunities } from './seedData';
+import { getEnvConfig } from '../config/env.js';
 
 // 100-Point Job Compatibility Scoring Heuristics
 export function calculateCompatibilityScore(opp) {
@@ -88,26 +89,47 @@ export function calculateCompatibilityScore(opp) {
   return Math.min(100, score);
 }
 
-// Settings management (Supabase & AI Keys)
+// Settings management (Supabase & AI Keys) — env vars override localStorage
 export function getSettings() {
+  const env = getEnvConfig();
   const defaults = {
     supabaseUrl: '',
     supabaseAnonKey: '',
     openaiApiKey: '',
     claudeApiKey: '',
     geminiApiKey: '',
-    savedFilters: []
+    savedFilters: [],
   };
+
+  let stored = { ...defaults };
   try {
     const data = localStorage.getItem('applyflow_settings');
-    return data ? { ...defaults, ...JSON.parse(data) } : defaults;
+    if (data) stored = { ...defaults, ...JSON.parse(data) };
   } catch (e) {
-    return defaults;
+    stored = { ...defaults };
   }
+
+  return {
+    ...stored,
+    geminiApiKey: env.geminiApiKey || stored.geminiApiKey || '',
+    openaiApiKey: env.openaiApiKey || stored.openaiApiKey || '',
+    supabaseUrl: env.supabaseUrl || stored.supabaseUrl || '',
+    supabaseAnonKey: env.supabaseAnonKey || stored.supabaseAnonKey || '',
+    claudeApiKey: env.claudeApiKey || stored.claudeApiKey || '',
+  };
 }
 
 export function saveSettings(settings) {
-  localStorage.setItem('applyflow_settings', JSON.stringify(settings));
+  const env = getEnvConfig();
+  const persisted = {
+    ...settings,
+    geminiApiKey: env.geminiApiKey ? '' : settings.geminiApiKey || '',
+    openaiApiKey: env.openaiApiKey ? '' : settings.openaiApiKey || '',
+    supabaseUrl: env.supabaseUrl ? '' : settings.supabaseUrl || '',
+    supabaseAnonKey: env.supabaseAnonKey ? '' : settings.supabaseAnonKey || '',
+    claudeApiKey: env.claudeApiKey ? '' : settings.claudeApiKey || '',
+  };
+  localStorage.setItem('applyflow_settings', JSON.stringify(persisted));
 }
 
 // Check if Supabase sync is active and configured

@@ -1,16 +1,38 @@
-# React + Vite
+# Applyflow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+AI-powered remote job application CRM — dashboard, opportunities spreadsheet, research engine, and document import.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+cp .env.example .env.local
+# Edit .env.local with your keys (never commit .env.local)
+npm run dev
+```
 
-## React Compiler
+## Environment variables
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Copy `.env.example` to `.env.local`. Vite exposes only `VITE_*` variables to the client:
 
-## Expanding the ESLint configuration
+| Variable | Purpose |
+|----------|---------|
+| `VITE_GEMINI_API_KEY` | Research Engine + document parsing |
+| `VITE_OPENAI_API_KEY` | Optional LLM parsing |
+| `VITE_SUPABASE_URL` | Cloud sync |
+| `VITE_SUPABASE_ANON_KEY` | Cloud sync (public anon key) |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Keys can alternatively be entered in **Settings** (stored in browser localStorage only).
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Security
+
+- Do not commit `.env`, `.env.local`, or real API keys.
+- Rotate any key that was ever committed to git history.
+- Supabase anon keys in frontend bundles are visible to users — use RLS policies.
