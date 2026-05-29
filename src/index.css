@@ -1225,8 +1225,25 @@ input, select, textarea, button {
   }
   
   .metrics-row {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 16px !important;
+  }
+
+  .metric-card {
+    height: auto !important;
+    min-height: 80px;
+    padding: 16px 16px;
+  }
+
+  .metric-card-label {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .stage-funnel {
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .metric-card-value {
@@ -1346,75 +1363,112 @@ input, select, textarea, button {
   }
 
   /* Opportunity Card Information Hierarchy */
+  .grid-row {
+    margin-bottom: 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 8px 12px;
+    height: auto !important;
+    background-color: var(--bg-secondary) !important;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  /* Row 1: Role Title */
   .col-role {
     width: 100% !important;
     font-size: 18px !important;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
     order: 1;
     line-height: 1.2;
+    padding-right: 40px !important; /* Space for absolute actions */
+    display: block !important;
   }
 
+  /* Absolute Actions (Top Right) */
+  .col-actions {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: block !important;
+    order: 0;
+  }
+  
+  .col-actions .icon-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Row 2: Company, Country, Size */
   .col-company {
-    width: auto !important;
     font-size: 14px !important;
     font-weight: 500;
     color: var(--text-secondary);
+    display: inline-flex !important;
     order: 2;
   }
 
-  .col-country {
-    width: auto !important;
-    font-size: 14px !important;
-    color: var(--text-secondary);
-    order: 3;
-  }
-
-  .col-company, .col-country, .col-type, .col-size {
+  .col-country, .col-size {
+    font-size: 13px !important;
+    color: var(--text-muted);
     display: inline-flex !important;
     align-items: center;
+    order: 2;
   }
 
-  .col-country::before, .col-type::before, .col-size::before {
+  .col-country::before, .col-size::before {
     content: "•";
-    margin: 0 6px;
+    margin-right: 6px;
     color: var(--border-secondary);
   }
 
-  .col-type { order: 4; font-size: 13px !important; color: var(--text-muted); }
-  .col-size { order: 5; font-size: 13px !important; color: var(--text-muted); }
-  
+  /* Row 3: Score, WAT Fit, Freshness */
   .col-score {
-    width: 100% !important;
-    margin-top: 8px;
-    order: 6;
-  }
-
-  .col-wat, .col-freshness, .col-salary {
     display: inline-flex !important;
     align-items: center;
-    margin-top: 4px;
-    font-size: 12px !important;
+    order: 3;
+    margin-top: 6px;
+  }
+
+  .col-wat, .col-freshness {
+    display: inline-flex !important;
+    align-items: center;
+    font-size: 11px !important;
     color: var(--text-muted);
     background: var(--bg-tertiary);
-    padding: 4px 8px;
+    padding: 3px 6px;
     border-radius: 4px;
     border: 1px solid var(--border-primary);
+    order: 3;
+    margin-top: 6px;
   }
-  
-  .col-wat { order: 7; }
-  .col-freshness { order: 8; }
-  .col-salary { order: 9; }
+
+  /* Row 4: Salary & Status */
+  .col-salary {
+    width: 100% !important;
+    font-size: 12px !important;
+    color: var(--text-muted);
+    display: inline-flex !important;
+    order: 4;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-primary);
+  }
 
   .col-status {
     width: 100% !important;
-    order: 10;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border-primary);
-    display: flex;
+    display: flex !important;
     align-items: center;
+    order: 5;
+    margin-top: 4px;
   }
 
   .col-status select {
@@ -1433,26 +1487,11 @@ input, select, textarea, button {
     background-size: 14px;
   }
 
-  .col-actions {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    order: 11;
-  }
-  
-  .col-actions .icon-btn {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    width: 32px;
-    height: 32px;
+  .cell-checkbox, .col-type {
+    display: none !important;
   }
 
-  .cell-checkbox {
-    display: none !important; /* Hide checkbox on mobile */
-  }
-
-  .grid-cell:not(.col-role):not(.col-company):not(.col-country):not(.col-type):not(.col-size):not(.col-score):not(.col-wat):not(.col-freshness):not(.col-salary):not(.col-status):not(.col-actions) {
+  .grid-cell:not(.col-role):not(.col-company):not(.col-country):not(.col-size):not(.col-score):not(.col-wat):not(.col-freshness):not(.col-salary):not(.col-status):not(.col-actions) {
     display: none !important;
   }
 }
-
