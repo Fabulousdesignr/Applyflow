@@ -5,6 +5,8 @@ import {
   deleteOpportunity, 
   getSettings 
 } from './database/db';
+import { useAuth } from './context/AuthContext';
+import AuthScreen from './components/AuthScreen';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import SpreadsheetGrid from './components/SpreadsheetGrid';
@@ -13,9 +15,31 @@ import UploadArea from './components/UploadArea';
 import ResearchEngine from './components/ResearchEngine';
 import DetailSidePanel from './components/DetailSidePanel';
 import SettingsModal from './components/SettingsModal';
-import { Sparkles, SlidersHorizontal, Cloud, Menu } from 'lucide-react';
+import { SlidersHorizontal, Cloud, Menu } from 'lucide-react';
 
 export default function App() {
+  const { session, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-loading">
+          <span className="spinner auth-spinner" />
+          <span>Loading session…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthScreen />;
+  }
+
+  return <ApplyflowApp />;
+}
+
+function ApplyflowApp() {
+  const { user, signOut } = useAuth();
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +167,8 @@ export default function App() {
             setMobileSidebarOpen(false); // Auto-close sidebar on link click on mobile!
           }}
           opportunities={opportunities}
+          userEmail={user?.email}
+          onLogout={signOut}
           openSettings={() => {
             setIsSettingsOpen(true);
             setMobileSidebarOpen(false);

@@ -19,8 +19,10 @@ Copy `.env.example` to `.env.local`. Vite exposes only `VITE_*` variables to the
 |----------|---------|
 | `VITE_GEMINI_API_KEY` | Research Engine + document parsing |
 | `VITE_OPENAI_API_KEY` | Optional LLM parsing |
-| `VITE_SUPABASE_URL` | Cloud sync |
-| `VITE_SUPABASE_ANON_KEY` | Cloud sync (public anon key) |
+| `VITE_SUPABASE_URL` | Auth + cloud sync |
+| `VITE_SUPABASE_ANON_KEY` | Auth + cloud sync (public anon key) |
+
+Enable **Email → Magic Link** in your [Supabase Auth providers](https://supabase.com/dashboard) and add `http://localhost:5173` to **Redirect URLs**.
 
 Keys can alternatively be entered in **Settings** (stored in browser localStorage only).
 

@@ -6,15 +6,23 @@ import {
   CloudUpload, 
   Settings, 
   Radar,
-  Sparkles,
-  TrendingUp
+  LogOut
 } from 'lucide-react';
+
+function emailInitials(email) {
+  if (!email) return 'AF';
+  const local = email.split('@')[0] || '';
+  if (local.length >= 2) return local.slice(0, 2).toUpperCase();
+  return local.slice(0, 1).toUpperCase() || 'AF';
+}
 
 export default function Sidebar({ 
   currentTab, 
   setCurrentTab, 
   opportunities, 
-  openSettings 
+  openSettings,
+  userEmail,
+  onLogout,
 }) {
   // Compute counts for badging
   const total = opportunities.length;
@@ -112,18 +120,28 @@ export default function Sidebar({
       <div className="sidebar-footer">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div className="user-profile">
-            <div className="user-avatar">FE</div>
+            <div className="user-avatar">{emailInitials(userEmail)}</div>
             <div className="user-info">
-              <span className="user-name">Fabulous</span>
-              <span className="user-meta">Lagos, NG (WAT)</span>
+              <span className="user-name">{userEmail || 'Signed in'}</span>
+              <span className="user-meta">Magic link session</span>
             </div>
-            <div 
-              className="icon-btn" 
-              style={{ marginLeft: 'auto' }}
-              onClick={openSettings}
-              title="Database & Key Settings"
-            >
-              <Settings size={15} />
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={openSettings}
+                title="Database & Key Settings"
+              >
+                <Settings size={15} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={onLogout}
+                title="Sign out"
+              >
+                <LogOut size={15} />
+              </button>
             </div>
           </div>
         </div>
