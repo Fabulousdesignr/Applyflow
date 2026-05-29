@@ -574,9 +574,19 @@ export default function SpreadsheetGrid({
                           ) : (
                             <div className="cell-inner-text">
                               {col.id === 'status' ? (
-                                <span className={`badge badge-${String(val).toLowerCase().replace(/\s+/g, '')}`}>
-                                  {val}
-                                </span>
+                                <select 
+                                  className={`badge badge-${String(val).toLowerCase().replace(/\s+/g, '')} native-status-select`}
+                                  value={val}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    const updated = { ...opp, status: e.target.value };
+                                    onSaveRow(updated);
+                                  }}
+                                  style={{ cursor: 'pointer', outline: 'none', border: 'none', fontFamily: 'inherit', appearance: 'none', paddingRight: '16px', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%239ca3af\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M19.5 8.25l-7.5 7.5-7.5-7.5\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center', backgroundSize: '10px' }}
+                                >
+                                  {col.options.map(opt => <option key={opt} value={opt} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>{opt}</option>)}
+                                </select>
                               ) : col.id === 'priority' ? (
                                 <span className={`priority-${String(val).toLowerCase()}`}>
                                   {val}

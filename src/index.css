@@ -1150,9 +1150,20 @@ input, select, textarea, button {
 }
 
 @media (max-width: 768px) {
-  /* Global Adjustments */
+  /* Global Adjustments - Single-page scrolling */
+  body, .app-container, .main-content, .tab-body, .dashboard-view, .grid-container, .grid-wrapper, .categories-view {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    display: block !important;
+  }
+
   body {
-    font-size: 14px; /* Increase base font size */
+    font-size: 14px;
   }
 
   .app-header {
@@ -1168,12 +1179,12 @@ input, select, textarea, button {
   }
 
   .panel-header {
-    font-size: 14px; /* Slightly larger panel headers */
+    font-size: 14px;
   }
 
   /* Mobile Sidebar Container Wrappers */
   .sidebar-container-mobile-wrapper {
-    position: absolute;
+    position: fixed; /* Fixed to cover screen */
     top: 0;
     left: 0;
     height: 100vh;
@@ -1188,9 +1199,8 @@ input, select, textarea, button {
     box-shadow: 10px 0 40px rgba(0, 0, 0, 0.6);
   }
   
-  /* Dim overlay behind sidebar when open */
   .sidebar-mobile-overlay {
-    position: absolute;
+    position: fixed; /* Fixed to cover screen */
     top: 0;
     left: 0;
     width: 100vw;
@@ -1200,12 +1210,10 @@ input, select, textarea, button {
     z-index: 150;
   }
   
-  /* Enable Hamburger Button on mobile */
   .mobile-menu-toggle {
     display: inline-flex !important;
   }
   
-  /* Sidebar occupies full height inside absolute wrapper */
   .sidebar {
     width: 100% !important;
     height: 100% !important;
@@ -1218,11 +1226,11 @@ input, select, textarea, button {
   
   .metrics-row {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 16px !important; /* Proper spacing */
+    gap: 16px !important;
   }
 
   .metric-card-value {
-    font-size: 26px; /* Larger numbers on mobile */
+    font-size: 26px;
   }
   
   .dashboard-sections {
@@ -1237,19 +1245,17 @@ input, select, textarea, button {
     grid-column: span 1 !important;
   }
   
-  /* Slide Drawer expands to full width on mobile devices */
   .detail-drawer {
     width: 100% !important;
     border-left: none !important;
+    position: fixed;
   }
   
-  /* Category cards stack cleanly */
   .categories-grid {
     grid-template-columns: 1fr !important;
     padding: 12px !important;
   }
   
-  /* Filters wrap on mobile screens */
   .grid-filters-row {
     height: auto !important;
     padding: 12px 16px !important;
@@ -1269,31 +1275,26 @@ input, select, textarea, button {
     gap: 8px;
     overflow-x: auto;
     flex-wrap: nowrap;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* IE 10+ */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     padding-bottom: 4px;
     width: 100%;
   }
 
   .filter-presets-scroll::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
   }
 
   .filter-presets-scroll > button {
-    flex-shrink: 0; /* Prevent pill squashing */
+    flex-shrink: 0;
   }
   
-  .search-input-wrapper {
-    width: 100% !important;
-  }
-  
-  .filter-select {
+  .search-input-wrapper, .filter-select, .btn-primary {
     width: 100% !important;
   }
   
   .btn-primary {
-    width: 100% !important;
-    height: 36px !important; /* Taller primary buttons */
+    height: 36px !important;
     font-size: 14px;
   }
 
@@ -1308,7 +1309,7 @@ input, select, textarea, button {
   }
   
   .spreadsheet-table thead {
-    display: none; /* Hide headers */
+    display: none;
   }
   
   .grid-row {
@@ -1323,6 +1324,7 @@ input, select, textarea, button {
     background-color: var(--bg-secondary) !important;
     position: relative;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    gap: 8px 12px;
   }
 
   .grid-row.selected {
@@ -1343,64 +1345,114 @@ input, select, textarea, button {
     background: transparent !important;
   }
 
-  /* Specific Column Overrides for Card Layout */
-  .col-company {
-    width: 100% !important;
-    font-size: 16px;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 4px;
-    order: 1;
-  }
-  
+  /* Opportunity Card Information Hierarchy */
   .col-role {
     width: 100% !important;
-    font-size: 14px;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    order: 2;
-  }
-  
-  .cell-checkbox {
-    position: absolute !important;
-    top: 16px;
-    right: 16px;
-    width: auto !important;
-    z-index: 10;
-    order: 0;
-    background: transparent !important;
+    font-size: 18px !important;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    order: 1;
+    line-height: 1.2;
   }
 
-  .cell-checkbox input {
-    width: 18px;
-    height: 18px;
+  .col-company {
+    width: auto !important;
+    font-size: 14px !important;
+    font-weight: 500;
+    color: var(--text-secondary);
+    order: 2;
   }
-  
-  /* Hide less critical columns */
-  .grid-cell:not(.col-company):not(.col-role):not(.col-status):not(.col-score):not(.col-actions):not(.cell-checkbox) {
-    display: none !important;
-  }
-  
-  /* Bottom secondary info row container simulation */
-  .col-status {
+
+  .col-country {
+    width: auto !important;
+    font-size: 14px !important;
+    color: var(--text-secondary);
     order: 3;
-    display: flex;
-    align-items: center;
-    margin-right: 12px;
   }
+
+  .col-company, .col-country, .col-type, .col-size {
+    display: inline-flex !important;
+    align-items: center;
+  }
+
+  .col-country::before, .col-type::before, .col-size::before {
+    content: "•";
+    margin: 0 6px;
+    color: var(--border-secondary);
+  }
+
+  .col-type { order: 4; font-size: 13px !important; color: var(--text-muted); }
+  .col-size { order: 5; font-size: 13px !important; color: var(--text-muted); }
   
   .col-score {
-    order: 4;
+    width: 100% !important;
+    margin-top: 8px;
+    order: 6;
+  }
+
+  .col-wat, .col-freshness, .col-salary {
+    display: inline-flex !important;
+    align-items: center;
+    margin-top: 4px;
+    font-size: 12px !important;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-primary);
+  }
+  
+  .col-wat { order: 7; }
+  .col-freshness { order: 8; }
+  .col-salary { order: 9; }
+
+  .col-status {
+    width: 100% !important;
+    order: 10;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
   }
-  
+
+  .col-status select {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px;
+  }
+
   .col-actions {
-    order: 5;
-    margin-left: auto; /* Push to right */
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    order: 11;
+  }
+  
+  .col-actions .icon-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    width: 32px;
+    height: 32px;
+  }
+
+  .cell-checkbox {
+    display: none !important; /* Hide checkbox on mobile */
+  }
+
+  .grid-cell:not(.col-role):not(.col-company):not(.col-country):not(.col-type):not(.col-size):not(.col-score):not(.col-wat):not(.col-freshness):not(.col-salary):not(.col-status):not(.col-actions) {
+    display: none !important;
   }
 }
 
