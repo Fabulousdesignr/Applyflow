@@ -1,8 +1,8 @@
 // Applyflow Research Engine — Gemini prompt, API, parsing, schema mapping
 
 import { calculateCompatibilityScore } from '../database/db';
+import { callGeminiGenerateContent, extractGeminiText } from '../config/geminiClient.js';
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
 const RESEARCH_TIMEOUT_MS = 90000;
 
 /**
@@ -158,13 +158,9 @@ export async function runGeminiResearch(apiKey, filters) {
   const timeoutId = setTimeout(() => controller.abort(), RESEARCH_TIMEOUT_MS);
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
+    const { data } = await callGeminiGenerateContent(
+      apiKey,
+      {
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.4,
@@ -174,18 +170,11 @@ export async function runGeminiResearch(apiKey, filters) {
             parts: [{ text: buildResearchPrompt(filters) }],
           },
         ],
-      }),
-    });
+      },
+      { signal: controller.signal }
+    );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Gemini API error (${response.status}): ${errText.slice(0, 200)}`);
-    }
-
-    const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('');
+    const text = extractGeminiText(data);
 
     if (!text) {
       throw new Error('Gemini returned an empty response. Try again or reduce results count.');
@@ -218,16 +207,12 @@ export async function testGeminiConnection(apiKey) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey.trim())}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Reply with exactly: OK' }] }],
-      }),
-    });
-    return response.ok;
+    await callGeminiGenerateContent(
+      apiKey,
+      { contents: [{ parts: [{ text: 'Reply with exactly: OK' }] }] },
+      { signal: controller.signal }
+    );
+    return true;
   } catch {
     return false;
   } finally {

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { seedOpportunities } from '../database/seedData';
 import { getSettings } from '../database/db';
+import { callGeminiGenerateContent, extractGeminiText } from '../config/geminiClient';
 
 export default function UploadArea({ opportunities, onImportRows }) {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -107,56 +108,47 @@ export default function UploadArea({ opportunities, onImportRows }) {
       if (settings.geminiApiKey) {
         setStatusMessage("Contacting Google Gemini API...");
         try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              generationConfig: {
-                responseMimeType: "application/json",
-              },
-              contents: [{
-                parts: [{
-                  text: `You are an expert data extractor. Extract EVERY SINGLE job opportunity from the following text and return them as a JSON array of objects.
+          const { data } = await callGeminiGenerateContent(settings.geminiApiKey, {
+            generationConfig: {
+              responseMimeType: 'application/json',
+            },
+            contents: [{
+              parts: [{
+                text: `You are an expert data extractor. Extract EVERY SINGLE job opportunity from the following text and return them as a JSON array of objects.
 CRITICAL: Do not stop after one item. If there are multiple jobs, extract ALL of them into the array.
 Each object should have these exact keys: company_name, role_title, country, company_type, company_size, remote_status, global_remote_friendly, mid_entry_friendly, ai_workflow_mentioned, key_tools_mentioned, salary_estimate, date_posted, hiring_freshness, wat_compatibility, career_page, application_link, linkedin_page, founder_hr_name, outreach_method, why_i_have_a_chance, portfolio_advice, application_emphasis, status, priority, notes.
 Set status to "Not Started" and priority to "Medium".
 
 Text:
 ${text}`
-                }]
               }]
-            })
+            }]
           });
-          
-          if (response.ok) {
-            const data = await response.json();
-            let responseText = data.candidates[0].content.parts[0].text;
-            responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const extractedItems = JSON.parse(responseText);
-            
-            const itemsToImport = (Array.isArray(extractedItems) ? extractedItems : [extractedItems]).map(opp => ({
-              ...opp,
-              id: `opp-${Math.random().toString(36).substring(2, 11)}`,
-              created_at: new Date().toISOString()
-            }));
 
-            onImportRows(itemsToImport);
-            setScannedResults({
-              type: 'batch',
-              count: itemsToImport.length,
-              items: itemsToImport,
-              message: `Gemini API successfully extracted ${itemsToImport.length} opportunities!`
-            });
-            setLoading(false);
-            return;
-          } else {
-            console.error("Gemini API Error:", await response.text());
-            setStatusMessage("Gemini API failed, falling back to heuristics...");
-            await delay(1000);
-          }
+          let responseText = extractGeminiText(data);
+          responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const extractedItems = JSON.parse(responseText);
+
+          const itemsToImport = (Array.isArray(extractedItems) ? extractedItems : [extractedItems]).map(opp => ({
+            ...opp,
+            id: `opp-${Math.random().toString(36).substring(2, 11)}`,
+            created_at: new Date().toISOString()
+          }));
+
+          onImportRows(itemsToImport);
+          setScannedResults({
+            type: 'batch',
+            count: itemsToImport.length,
+            items: itemsToImport,
+            message: `Gemini API successfully extracted ${itemsToImport.length} opportunities!`
+          });
+          setLoading(false);
+          return;
         } catch (err) {
-          console.error("Fetch error:", err);
-          setStatusMessage("Connection failed, falling back to heuristics...");
+          console.error("Gemini error:", err);
+          setStatusMessage(err.message?.includes('overloaded')
+            ? 'Gemini busy — retrying with fallbacks failed. Wait a moment or try fewer results.'
+            : 'Gemini API failed, falling back to heuristics...');
           await delay(1000);
         }
       }
