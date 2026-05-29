@@ -133,7 +133,7 @@ You can also view a quick summary of the work here: [walkthrough.md](file:///C:/
 
 ### User Input
 
-AIzaSyDd6iC8Jn-SSa7zbOye5MlkoUBDqZdpdjw This is the APi key
+***** This is the APi key
 
 ### Planner Response
 
