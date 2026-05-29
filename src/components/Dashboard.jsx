@@ -175,11 +175,11 @@ export default function Dashboard({
                           color: '#9ca3af'
                         }}>{opp.company_type}</span>
                       </div>
-                      <span style={{ fontSize: '11px', color: '#9ca3af', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', display: 'block', wordBreak: 'break-word', overflow: 'hidden' }}>
                         {opp.role_title} • {opp.country}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                         <span className={`score-pill ${opp.compatibility_score >= 80 ? 'high' : opp.compatibility_score >= 50 ? 'medium' : 'low'}`}>
                           {opp.compatibility_score} pts
