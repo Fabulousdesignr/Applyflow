@@ -3,7 +3,9 @@ import {
   getOpportunities, 
   saveOpportunity, 
   deleteOpportunity, 
-  getSettings 
+  getSettings,
+  setDataUserId,
+  clearUserDataCache,
 } from './database/db';
 import { useAuth } from './context/AuthContext';
 import AuthScreen from './components/AuthScreen';
@@ -50,32 +52,45 @@ function ApplyflowApp() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Settings sync label state
-  const [syncStatus, setSyncStatus] = useState('Offline-first');
+  const [syncStatus, setSyncStatus] = useState('Loading…');
 
-  // Load database rows on mount
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getOpportunities();
       setOpportunities(data);
-      
-      // Update active sync status indicators
+
       const settings = getSettings();
-      if (settings.supabaseUrl && settings.supabaseAnonKey) {
-        setSyncStatus('Supabase SQL Synced');
+      if (user?.id && settings.supabaseUrl && settings.supabaseAnonKey) {
+        setSyncStatus('Supabase · your account');
+      } else if (settings.supabaseUrl && settings.supabaseAnonKey) {
+        setSyncStatus('Supabase configured');
       } else {
-        setSyncStatus('Offline-first (LocalStorage)');
+        setSyncStatus('Offline cache');
       }
     } catch (e) {
       console.error("Error loading opportunities:", e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setDataUserId(null);
+      return;
+    }
+    setDataUserId(user.id);
+    loadData();
+  }, [user?.id, loadData]);
+
+  const handleLogout = useCallback(async () => {
+    clearUserDataCache(user?.id);
+    setDataUserId(null);
+    setOpportunities([]);
+    setSelectedOpp(null);
+    await signOut();
+  }, [user?.id, signOut]);
 
   // CRUD Actions — wrapped in useCallback for stable references + startTransition for non-blocking UI
   const handleSaveOpportunity = useCallback(async (opp) => {
@@ -168,7 +183,7 @@ function ApplyflowApp() {
           }}
           opportunities={opportunities}
           userEmail={user?.email}
-          onLogout={signOut}
+          onLogout={handleLogout}
           openSettings={() => {
             setIsSettingsOpen(true);
             setMobileSidebarOpen(false);
