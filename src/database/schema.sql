@@ -1,6 +1,9 @@
--- Create opportunities table for Applyflow CRM
+-- Applyflow opportunities table (canonical reference — post Phase 2A)
+-- For existing projects, run supabase/migrations/*.sql in order instead of re-running this whole file.
+
 CREATE TABLE IF NOT EXISTS opportunities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
     company_name TEXT NOT NULL,
     role_title TEXT NOT NULL,
     country TEXT,
@@ -33,13 +36,53 @@ CREATE TABLE IF NOT EXISTS opportunities (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable Row Level Security (RLS)
+CREATE INDEX IF NOT EXISTS idx_opportunities_user_id ON opportunities (user_id);
+
+-- Auto-assign auth.uid() on insert when user_id omitted (authenticated clients)
+CREATE OR REPLACE FUNCTION public.set_opportunity_owner()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.user_id IS NULL THEN
+    NEW.user_id := auth.uid();
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_opportunities_set_owner ON opportunities;
+
+CREATE TRIGGER trg_opportunities_set_owner
+  BEFORE INSERT ON opportunities
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_opportunity_owner();
+
 ALTER TABLE opportunities ENABLE ROW LEVEL SECURITY;
 
--- Create policy for authenticated users to access their own data
--- Note: In a production team setup, you can add a user_id UUID references auth.users(id) field.
--- For a simple direct database connection bypass, we allow read/write via anon key.
-CREATE POLICY "Allow all public operations" ON opportunities
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
+CREATE POLICY "opportunities_select_own"
+  ON opportunities
+  FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "opportunities_insert_own"
+  ON opportunities
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "opportunities_update_own"
+  ON opportunities
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "opportunities_delete_own"
+  ON opportunities
+  FOR DELETE
+  TO authenticated
+  USING (auth.uid() = user_id);

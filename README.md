@@ -38,3 +38,4 @@ npm run preview
 - Do not commit `.env`, `.env.local`, or real API keys.
 - Rotate any key that was ever committed to git history.
 - Supabase anon keys in frontend bundles are visible to users — use RLS policies.
+- Database migrations (user ownership + RLS): see `src/database/PHASE2A_MIGRATION.md`.
