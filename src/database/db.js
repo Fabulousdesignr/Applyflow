@@ -84,34 +84,47 @@ async function getAccessToken() {
   return session?.access_token ?? null;
 }
 
-function getRestHeaders(settings, accessToken) {
-  return {
-    'Content-Type': 'application/json',
-    apikey: settings.supabaseAnonKey,
-    Authorization: `Bearer ${accessToken}`,
-    Prefer: 'return=representation',
-  };
-}
-
 function isTemporaryId(id) {
   return !id || String(id).startsWith('opp-');
 }
 
+/** PostgREST rejects "" for DATE columns — coerce to null. */
+function sanitizeDbPayload(fields) {
+  const out = { ...fields };
+  for (const key of ['follow_up_date', 'applied_date']) {
+    if (out[key] === '' || out[key] === undefined) {
+      out[key] = null;
+    }
+  }
+  return out;
+}
+
 /** Strip server-owned fields; omit temp ids so Postgres generates UUIDs. */
-function toSupabaseInsertPayload(opp) {
+function toSupabaseInsertPayload(opp, userId) {
   const { id, user_id, created_at, ...rest } = opp;
-  return {
+  return sanitizeDbPayload({
     ...rest,
+    user_id: userId,
     compatibility_score: opp.compatibility_score ?? calculateCompatibilityScore(opp),
-  };
+  });
 }
 
 function toSupabaseUpdatePayload(opp) {
   const { id, user_id, created_at, ...rest } = opp;
-  return {
+  return sanitizeDbPayload({
     ...rest,
     compatibility_score: opp.compatibility_score ?? calculateCompatibilityScore(opp),
-  };
+  });
+}
+
+async function logSupabaseWriteFailure(action, error, extra = {}) {
+  console.error(`[Applyflow] Supabase ${action} failed`, {
+    message: error?.message ?? error,
+    details: error?.details,
+    hint: error?.hint,
+    code: error?.code,
+    ...extra,
+  });
 }
 
 // 100-Point Job Compatibility Scoring Heuristics
@@ -292,36 +305,53 @@ export async function saveOpportunity(opp) {
 
   if (canUseAuthenticatedSupabase(settings)) {
     try {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        const isNew = isTemporaryId(opp.id);
-        const url = isNew
-          ? `${settings.supabaseUrl}/rest/v1/opportunities`
-          : `${settings.supabaseUrl}/rest/v1/opportunities?id=eq.${encodeURIComponent(opp.id)}`;
+      const isNew = isTemporaryId(opp.id);
 
-        const body = isNew
-          ? toSupabaseInsertPayload(updatedOpp)
-          : toSupabaseUpdatePayload(updatedOpp);
-
-        const response = await fetch(url, {
-          method: isNew ? 'POST' : 'PATCH',
-          headers: getRestHeaders(settings, accessToken),
-          body: JSON.stringify(body),
+      if (import.meta.env.DEV) {
+        console.debug('[Applyflow] saveOpportunity', {
+          isNew,
+          userId,
+          company: updatedOpp.company_name,
         });
+      }
 
-        if (response.ok) {
-          const result = await response.json();
-          const saved = Array.isArray(result) ? result[0] : result;
-          if (saved) {
-            updateUserCacheOpportunity(userId, saved);
-            return saved;
-          }
+      if (isNew) {
+        const payload = toSupabaseInsertPayload(updatedOpp, userId);
+        const { data, error } = await supabase
+          .from('opportunities')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (!error && data) {
+          updateUserCacheOpportunity(userId, data);
+          return data;
         }
-        console.warn('Supabase save failed:', response.status, response.statusText);
+        logSupabaseWriteFailure('insert', error, { payload });
+      } else {
+        const payload = toSupabaseUpdatePayload(updatedOpp);
+        const { data, error } = await supabase
+          .from('opportunities')
+          .update(payload)
+          .eq('id', opp.id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          updateUserCacheOpportunity(userId, data);
+          return data;
+        }
+        logSupabaseWriteFailure('update', error, { id: opp.id, payload });
       }
     } catch (e) {
-      console.warn('Supabase save error:', e);
+      console.error('[Applyflow] Supabase save error:', e);
     }
+  } else if (import.meta.env.DEV) {
+    console.warn('[Applyflow] saveOpportunity: Supabase not available for authenticated sync', {
+      hasClient: Boolean(supabase),
+      userId,
+      configured: isSupabaseConfigured(settings),
+    });
   }
 
   updateUserCacheOpportunity(userId, updatedOpp);
@@ -338,23 +368,15 @@ export async function deleteOpportunity(id) {
 
   if (canUseAuthenticatedSupabase(settings)) {
     try {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        const response = await fetch(
-          `${settings.supabaseUrl}/rest/v1/opportunities?id=eq.${encodeURIComponent(id)}`,
-          {
-            method: 'DELETE',
-            headers: getRestHeaders(settings, accessToken),
-          }
-        );
-        if (response.ok) {
-          deleteUserCacheOpportunity(userId, id);
-          return true;
-        }
-        console.warn('Supabase delete failed:', response.statusText);
+      const { error } = await supabase.from('opportunities').delete().eq('id', id);
+
+      if (!error) {
+        deleteUserCacheOpportunity(userId, id);
+        return true;
       }
+      logSupabaseWriteFailure('delete', error, { id });
     } catch (e) {
-      console.warn('Supabase delete error:', e);
+      console.error('[Applyflow] Supabase delete error:', e);
     }
   }
 
@@ -445,7 +467,7 @@ export async function migrateLocalToSupabase(url, anonKey) {
 
     const payload = list.map((item) => {
       if (isTemporaryId(item.id)) {
-        return toSupabaseInsertPayload(item);
+        return toSupabaseInsertPayload(item, userId);
       }
       return {
         id: item.id,
@@ -453,20 +475,16 @@ export async function migrateLocalToSupabase(url, anonKey) {
       };
     });
 
-    const response = await fetch(`${url}/rest/v1/opportunities`, {
-      method: 'POST',
-      headers: {
-        ...getRestHeaders({ supabaseUrl: url, supabaseAnonKey: anonKey }, accessToken),
-        Prefer: 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify(payload),
+    const { error } = await supabase.from('opportunities').upsert(payload, {
+      onConflict: 'id',
     });
 
-    if (response.ok) {
+    if (!error) {
       localStorage.removeItem(LEGACY_OPPORTUNITIES_KEY);
       await getOpportunities();
       return true;
     }
+    logSupabaseWriteFailure('migrate', error, { count: payload.length });
     return false;
   } catch (e) {
     console.error('Migration error:', e);
