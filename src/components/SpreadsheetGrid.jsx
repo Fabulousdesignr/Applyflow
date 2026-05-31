@@ -397,7 +397,7 @@ export default function SpreadsheetGrid({
         <div className="filters-left">
           
           {/* Preset Pill Selectors */}
-          <div className="filter-presets-scroll" style={{ marginRight: '12px' }}>
+          <div className="filter-presets-scroll">
             {filterPresets.map(preset => (
               <button
                 key={preset.id}

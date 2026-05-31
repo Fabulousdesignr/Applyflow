@@ -485,7 +485,7 @@ input, select, textarea, button {
 }
 
 .grid-filters-row {
-  height: 40px;
+  min-height: 40px;
   border-bottom: 1px solid var(--border-primary);
   background-color: var(--bg-secondary);
   display: flex;
@@ -493,14 +493,41 @@ input, select, textarea, button {
   justify-content: space-between;
   padding: 0 12px;
   flex-shrink: 0;
+  flex-wrap: nowrap;
   gap: 12px;
+  position: relative;
+  z-index: 6;
 }
 
 .filters-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-grow: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.filter-presets-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.filters-left .search-input-wrapper {
+  flex-shrink: 0;
+}
+
+.filters-left .filter-select {
+  flex-shrink: 0;
+}
+
+.grid-filters-row > .btn-primary {
+  flex-shrink: 0;
 }
 
 .search-input-wrapper {
