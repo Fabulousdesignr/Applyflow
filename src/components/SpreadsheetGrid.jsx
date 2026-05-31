@@ -11,6 +11,7 @@ import {
   Save
 } from 'lucide-react';
 import { calculateCompatibilityScore } from '../database/db';
+import { isArchivedOpportunity } from '../utils/opportunityArchive';
 
 const COLUMNS = [
   { id: 'company_name', label: 'Company Name', type: 'text', className: 'col-company' },
@@ -37,7 +38,7 @@ export default function SpreadsheetGrid({
   // Grid interactive states
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Active');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [activeFilterPreset, setActiveFilterPreset] = useState('All');
   
@@ -86,7 +87,12 @@ export default function SpreadsheetGrid({
 
       // 2. Select dropdown filters
       const matchesType = typeFilter === 'All' || item.company_type === typeFilter;
-      const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'Active'
+          ? !isArchivedOpportunity(item)
+          : statusFilter === 'All'
+            ? true
+            : item.status === statusFilter;
       const matchesPriority = priorityFilter === 'All' || item.priority === priorityFilter;
 
       // 3. Saved Filter Presets
@@ -435,15 +441,16 @@ export default function SpreadsheetGrid({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="All">All Statuses</option>
+            <option value="Active">Active pipeline</option>
+            <option value="All">All (incl. archived)</option>
             <option value="Not Started">Not Started</option>
             <option value="Researching">Researching</option>
             <option value="Applying">Applying</option>
             <option value="Applied">Applied</option>
             <option value="Followed Up">Followed Up</option>
             <option value="Interview">Interviews</option>
-            <option value="Rejected">Rejected</option>
             <option value="Offer">Offers</option>
+            <option value="Rejected">Archived (Rejected)</option>
           </select>
         </div>
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   TrendingUp, 
   Calendar, 
@@ -9,49 +9,58 @@ import {
   CheckCircle, 
   Plus
 } from 'lucide-react';
+import {
+  filterActiveOpportunities,
+  countArchivedOpportunities,
+} from '../utils/opportunityArchive';
 
 export default function Dashboard({ 
   opportunities, 
   onNavigateToTab, 
   onSelectRow 
 }) {
-  // Stat calculations
-  const total = opportunities.length;
-  const applied = opportunities.filter(o => o.status === 'Applied').length;
-  const pending = opportunities.filter(o => ['Applying', 'Applied', 'Followed Up'].includes(o.status)).length;
-  const interviews = opportunities.filter(o => o.status === 'Interview').length;
-  const rejections = opportunities.filter(o => o.status === 'Rejected').length;
+  const activeOpportunities = useMemo(
+    () => filterActiveOpportunities(opportunities),
+    [opportunities]
+  );
+
+  // Stat calculations (active pipeline only; archived shown separately)
+  const total = activeOpportunities.length;
+  const applied = activeOpportunities.filter(o => o.status === 'Applied').length;
+  const pending = activeOpportunities.filter(o => ['Applying', 'Applied', 'Followed Up'].includes(o.status)).length;
+  const interviews = activeOpportunities.filter(o => o.status === 'Interview').length;
+  const rejections = countArchivedOpportunities(opportunities);
   
-  const highPriority = opportunities.filter(o => o.priority === 'High').length;
-  const highScoring = opportunities.filter(o => o.compatibility_score >= 80).length;
-  const watPerfect = opportunities.filter(o => String(o.wat_compatibility).toLowerCase().includes('perfect')).length;
+  const highPriority = activeOpportunities.filter(o => o.priority === 'High').length;
+  const highScoring = activeOpportunities.filter(o => o.compatibility_score >= 80).length;
+  const watPerfect = activeOpportunities.filter(o => String(o.wat_compatibility).toLowerCase().includes('perfect')).length;
   
   // Follow-up reminders
   const today = new Date().toISOString().substring(0, 10);
-  const upcomingFollowups = opportunities
-    .filter(o => o.follow_up_date && o.follow_up_date >= today && o.status !== 'Closed' && o.status !== 'Rejected')
+  const upcomingFollowups = activeOpportunities
+    .filter(o => o.follow_up_date && o.follow_up_date >= today && o.status !== 'Closed')
     .sort((a, b) => a.follow_up_date.localeCompare(b.follow_up_date))
     .slice(0, 5);
 
   // Top high score opportunities
-  const topCompatibility = [...opportunities]
+  const topCompatibility = [...activeOpportunities]
     .sort((a, b) => b.compatibility_score - a.compatibility_score)
     .slice(0, 4);
 
   // Funnel calculations
   const stageStats = {
-    'Not Started': opportunities.filter(o => o.status === 'Not Started').length,
-    'Researching': opportunities.filter(o => o.status === 'Researching').length,
-    'Applying': opportunities.filter(o => o.status === 'Applying').length,
-    'Applied': opportunities.filter(o => o.status === 'Applied').length,
-    'Interview': opportunities.filter(o => o.status === 'Interview').length,
-    'Offer': opportunities.filter(o => o.status === 'Offer').length,
+    'Not Started': activeOpportunities.filter(o => o.status === 'Not Started').length,
+    'Researching': activeOpportunities.filter(o => o.status === 'Researching').length,
+    'Applying': activeOpportunities.filter(o => o.status === 'Applying').length,
+    'Applied': activeOpportunities.filter(o => o.status === 'Applied').length,
+    'Interview': activeOpportunities.filter(o => o.status === 'Interview').length,
+    'Offer': activeOpportunities.filter(o => o.status === 'Offer').length,
   };
 
   const maxStageCount = Math.max(...Object.values(stageStats), 1);
 
   // Company types breakdown
-  const typeCounts = opportunities.reduce((acc, o) => {
+  const typeCounts = activeOpportunities.reduce((acc, o) => {
     acc[o.company_type] = (acc[o.company_type] || 0) + 1;
     return acc;
   }, {});

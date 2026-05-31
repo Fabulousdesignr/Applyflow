@@ -8,6 +8,7 @@ import {
   Radar,
   LogOut
 } from 'lucide-react';
+import { filterActiveOpportunities } from '../utils/opportunityArchive';
 
 function emailInitials(email) {
   if (!email) return 'AF';
@@ -24,12 +25,13 @@ export default function Sidebar({
   userEmail,
   onLogout,
 }) {
-  // Compute counts for badging
-  const total = opportunities.length;
-  const researching = opportunities.filter(o => o.status === 'Researching').length;
-  const applying = opportunities.filter(o => o.status === 'Applying').length;
-  const applied = opportunities.filter(o => o.status === 'Applied').length;
-  const interview = opportunities.filter(o => o.status === 'Interview').length;
+  // Compute counts for badging (active pipeline; archived excluded)
+  const activeOpportunities = filterActiveOpportunities(opportunities);
+  const total = activeOpportunities.length;
+  const researching = activeOpportunities.filter(o => o.status === 'Researching').length;
+  const applying = activeOpportunities.filter(o => o.status === 'Applying').length;
+  const applied = activeOpportunities.filter(o => o.status === 'Applied').length;
+  const interview = activeOpportunities.filter(o => o.status === 'Interview').length;
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },

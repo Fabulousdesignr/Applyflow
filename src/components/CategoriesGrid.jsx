@@ -11,6 +11,7 @@ import {
   Users, 
   UserCheck 
 } from 'lucide-react';
+import { filterActiveOpportunities } from '../utils/opportunityArchive';
 
 const CATEGORIES = [
   {
@@ -105,12 +106,14 @@ const CATEGORIES = [
 ];
 
 export default function CategoriesGrid({ opportunities, onSelectCategoryPreset }) {
+  const activeOpportunities = filterActiveOpportunities(opportunities);
+
   return (
     <div className="categories-view">
       <div className="categories-grid">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
-          const count = opportunities.filter(cat.matchFn).length;
+          const count = activeOpportunities.filter(cat.matchFn).length;
 
           return (
             <div
