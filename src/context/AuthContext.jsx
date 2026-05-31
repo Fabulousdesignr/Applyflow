@@ -15,23 +15,31 @@ export function AuthProvider({ children }) {
 
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (mounted) {
-        setSession(initialSession);
+    // Wait for INITIAL_SESSION (after storage + magic-link URL recovery) before
+    // leaving the loading state. Avoid parallel getSession() — it races init.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return;
+
+      setSession(nextSession);
+
+      if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'SIGNED_OUT'
+      ) {
         setLoading(false);
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
+    supabase.auth.startAutoRefresh();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      supabase.auth.stopAutoRefresh();
     };
   }, []);
 

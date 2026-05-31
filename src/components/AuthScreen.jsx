@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { supabase, isSupabaseAuthConfigured } from '../lib/supabase';
+import { supabase, isSupabaseAuthConfigured, getAuthRedirectUrl } from '../lib/supabase';
 
 export default function AuthScreen() {
   const [tab, setTab] = useState('signup');
@@ -30,7 +30,7 @@ export default function AuthScreen() {
       const { error: authError } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getAuthRedirectUrl(),
         },
       });
 
