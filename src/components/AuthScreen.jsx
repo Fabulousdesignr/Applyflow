@@ -50,8 +50,11 @@ export default function AuthScreen() {
     <div className="auth-screen">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="logo-dot" />
-          <span>Applyflow</span>
+          <img
+            src="/logo-full.svg"
+            alt="Applyflow"
+            style={{ height: '36px', width: 'auto', display: 'block', margin: '0 auto' }}
+          />
         </div>
 
         <p className="auth-subtitle">

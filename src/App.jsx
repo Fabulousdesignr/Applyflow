@@ -18,9 +18,28 @@ import ResearchEngine from './components/ResearchEngine';
 import DetailSidePanel from './components/DetailSidePanel';
 import SettingsModal from './components/SettingsModal';
 import { SlidersHorizontal, Cloud, Menu } from 'lucide-react';
+import LandingPage from './components/Landing/LandingPage.jsx';
 
 export default function App() {
+  const [screen, setScreen] = useState('landing');
   const { session, loading: authLoading } = useAuth();
+
+  if (screen === 'landing') {
+    return (
+      <LandingPage
+        onGetStarted={() => {
+          setScreen('loading');
+          setTimeout(() => {
+            setScreen('dashboard');
+          }, 3000);
+        }}
+      />
+    );
+  }
+
+  if (screen === 'loading') {
+    return <LoadingScreen />;
+  }
 
   if (authLoading) {
     return (
@@ -37,10 +56,10 @@ export default function App() {
     return <AuthScreen />;
   }
 
-  return <ApplyflowApp />;
+  return <ApplyflowApp onLogout={() => setScreen('landing')} />;
 }
 
-function ApplyflowApp() {
+function ApplyflowApp({ onLogout }) {
   const { user, signOut } = useAuth();
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [opportunities, setOpportunities] = useState([]);
@@ -90,7 +109,8 @@ function ApplyflowApp() {
     setOpportunities([]);
     setSelectedOpp(null);
     await signOut();
-  }, [user?.id, signOut]);
+    onLogout();
+  }, [user?.id, signOut, onLogout]);
 
   // CRUD Actions — wrapped in useCallback for stable references + startTransition for non-blocking UI
   const handleSaveOpportunity = useCallback(async (opp) => {
@@ -325,6 +345,51 @@ function ApplyflowApp() {
         }
         .spinner {
           display: inline-block;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      width: '100vw',
+      backgroundColor: '#0a0b0d',
+      color: '#f3f4f6',
+      fontFamily: "'Inter', sans-serif",
+      gap: '24px'
+    }}>
+      <img
+        src="/logo-full.svg"
+        alt="Applyflow"
+        style={{ height: '42px', width: 'auto', marginBottom: '8px' }}
+      />
+      <div style={{
+        width: '36px',
+        height: '36px',
+        border: '3px solid rgba(10,91,255,0.12)',
+        borderTopColor: '#0A5BFF',
+        borderRadius: '50%',
+        animation: 'spin 0.9s linear infinite'
+      }} />
+      <div style={{
+        fontSize: '13px',
+        fontWeight: '500',
+        color: '#64748b',
+        letterSpacing: '0.3px'
+      }}>
+        Initializing ApplyFlow...
+      </div>
+      <style>{`
+        @keyframes spin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>

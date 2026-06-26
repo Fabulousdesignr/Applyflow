@@ -53,8 +53,11 @@ export default function Sidebar({
       {/* Header / Logo */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
-          <div className="logo-dot" />
-          <span>Applyflow</span>
+          <img
+            src="/logo-full.svg"
+            alt="Applyflow"
+            style={{ height: '28px', width: 'auto', display: 'block' }}
+          />
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
           <span style={{

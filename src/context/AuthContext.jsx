@@ -4,50 +4,24 @@ import { supabase, isSupabaseAuthConfigured } from '../lib/supabase';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const mockUser = {
+    id: 'mock-user-id',
+    email: 'portfolio-demo@applyflow.com',
+  };
+  const mockSession = {
+    user: mockUser,
+  };
+
+  const [session, setSession] = useState(mockSession);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!isSupabaseAuthConfigured()) {
-      setLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
-    // Wait for INITIAL_SESSION (after storage + magic-link URL recovery) before
-    // leaving the loading state. Avoid parallel getSession() — it races init.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!mounted) return;
-
-      setSession(nextSession);
-
-      if (
-        event === 'INITIAL_SESSION' ||
-        event === 'SIGNED_IN' ||
-        event === 'TOKEN_REFRESHED' ||
-        event === 'SIGNED_OUT'
-      ) {
-        setLoading(false);
-      }
-    });
-
-    supabase.auth.startAutoRefresh();
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-      supabase.auth.stopAutoRefresh();
-    };
+    // Supabase auth is bypassed entirely for the portfolio demo
   }, []);
 
   const signOut = useCallback(async () => {
-    if (!supabase) return;
-    await supabase.auth.signOut();
-    setSession(null);
-  }, []);
+    setSession(mockSession);
+  }, [mockSession]);
 
   const value = useMemo(
     () => ({
