@@ -11,29 +11,61 @@ const RESEARCH_TIMEOUT_MS = 90000;
 export function buildResearchPrompt(filters) {
   const roleList = (filters.roleCategories || []).join(', ') || 'Product Designer';
   const toolsList = (filters.aiTools || []).join(', ') || 'Figma';
+  const coreSkills = (filters.coreSkills || []).join(', ');
+  const industries = (filters.industries || []).join(', ');
+  const companyStages = (filters.companyStages || []).join(', ');
+  const mustHaves = (filters.mustHaves || []).join(', ');
+  const workEligibility = (filters.workEligibility || []).join(', ');
 
-  return `You are a tactical remote job research agent for product designers, especially those in West Africa (WAT timezone).
+  const searchModeInstructions = {
+    precision: 'Focus ONLY on highly relevant, exact-fit matches. Prioritize quality over quantity. Every result must strongly align with all stated criteria.',
+    discovery: 'Find a mix of obvious fits AND hidden gems — unconventional companies, emerging markets, and roles the candidate may not have considered but would excel at.',
+    aggressive: 'Include stretch opportunities: roles slightly above the stated experience level, well-funded fast-growing companies, and high-ceiling positions the candidate can still reasonably pursue.',
+  };
+  const modeInstruction = searchModeInstructions[filters.searchMode] || searchModeInstructions.discovery;
+
+  const salaryContext = filters.minSalary
+    ? `Minimum compensation: ${filters.minSalary} ${filters.currency} ${filters.payFrequency}. Deprioritize roles that clearly cannot meet this.`
+    : '';
+
+  const geoContext = filters.countryCity
+    ? `Geographic preference: ${filters.countryCity} (within ${filters.region || 'Global'} region).`
+    : filters.region && filters.region !== 'Global'
+    ? `Geographic preference: ${filters.region} region.`
+    : 'Open to global remote opportunities.';
+
+  return `You are a tactical remote job research agent specializing in global design and AI product roles.
 
 Run targeted research and return ONLY valid JSON — no markdown, no explanation, no prose.
 
-USER CRITERIA:
-- Role categories: ${roleList}
+SEARCH MODE: ${(filters.searchMode || 'discovery').toUpperCase()}
+${modeInstruction}
+
+USER PROFILE:
+- Role target: ${filters.roleTitle ? `"${filters.roleTitle}" (also open to: ${roleList})` : roleList}
 - Experience level: ${filters.experienceLevel}
+- Core skills: ${coreSkills || roleList}
+- AI / tool stack: ${toolsList}
+- ${geoContext}
+- Work eligibility: ${workEligibility || 'Global remote only'}
 - Remote preference: ${filters.remotePreference}
 - Timezone compatibility: ${filters.timezoneCompatibility}
 - Team size preference: ${filters.teamSize}
-- AI / tool stack interest: ${toolsList}
+${salaryContext ? `- ${salaryContext}` : ''}
+${industries ? `- Preferred industries: ${industries}` : ''}
+${companyStages ? `- Preferred company stages: ${companyStages}` : ''}
+${mustHaves ? `- Non-negotiables / must-haves: ${mustHaves}` : ''}
 - Number of opportunities to return: exactly ${filters.resultsCount}
 
 REQUIREMENTS:
-- Return real or highly plausible active remote roles at startups/SaaS/agencies that hire internationally.
-- Prioritize global remote, async-friendly, and WAT-compatible employers when requested.
+- Return real or highly plausible active remote roles at companies that hire internationally.
+- Respect the candidate's must-haves as dealbreakers when filtering results.
 - Each object MUST use exactly these keys (all strings):
   company_name, role_title, country, company_type, remote_status, salary_estimate, hiring_freshness, tools, why_match, career_page, application_link
 
 - company_type must be one of: AI Startup, SaaS, Fintech, Agency, No-Code Studio
 - tools: comma-separated design/AI tools mentioned for the role
-- why_match: one concise sentence (max 25 words) explaining fit for this candidate profile
+- why_match: one concise sentence (max 30 words) explaining why this is a strong fit for this exact candidate
 - career_page and application_link: full URLs or empty string if unknown
 
 Return a JSON object with a single key "opportunities" whose value is an array of ${filters.resultsCount} objects. No other keys at root level.`;

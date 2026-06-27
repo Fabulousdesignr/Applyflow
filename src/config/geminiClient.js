@@ -1,8 +1,8 @@
 // Shared Gemini API client — retries, backoff, and model fallbacks for 503/429 spikes
 
 const GEMINI_MODELS = [
-  'gemini-2.0-flash',
   'gemini-2.5-flash',
+  'gemini-2.0-flash',
   'gemini-1.5-flash',
 ];
 
@@ -60,10 +60,11 @@ export async function callGeminiGenerateContent(apiKey, body, options = {}) {
             await delay(1500 * 2 ** attempt);
             continue;
           }
-          break;
         }
 
-        throw lastError;
+        // Non-retryable error (e.g. 404) or ran out of retry attempts:
+        // Break out of the attempt loop to fall back to the next model.
+        break;
       } catch (err) {
         if (err.name === 'AbortError') throw err;
         lastError = err;
