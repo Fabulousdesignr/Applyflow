@@ -8,6 +8,7 @@ export function getEnvConfig() {
   return {
     geminiApiKey: String(import.meta.env.VITE_GEMINI_API_KEY || '').trim(),
     openaiApiKey: String(import.meta.env.VITE_OPENAI_API_KEY || '').trim(),
+    tavilyApiKey: String(import.meta.env.VITE_TAVILY_API_KEY || '').trim(),
     supabaseUrl: String(
       import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_URL || ''
     ).trim(),
@@ -20,7 +21,7 @@ export function getEnvConfig() {
   };
 }
 
-/** @param {'geminiApiKey'|'openaiApiKey'|'supabaseUrl'|'supabaseAnonKey'|'claudeApiKey'} field */
+/** @param {'geminiApiKey'|'openaiApiKey'|'tavilyApiKey'|'supabaseUrl'|'supabaseAnonKey'|'claudeApiKey'} field */
 export function isEnvKey(field) {
   const env = getEnvConfig();
   return Boolean(env[field]);
@@ -31,6 +32,7 @@ export function getEnvKeySource() {
   return {
     geminiApiKey: env.geminiApiKey ? 'environment' : 'local',
     openaiApiKey: env.openaiApiKey ? 'environment' : 'local',
+    tavilyApiKey: env.tavilyApiKey ? 'environment' : 'local',
     supabaseUrl: env.supabaseUrl ? 'environment' : 'local',
     supabaseAnonKey: env.supabaseAnonKey ? 'environment' : 'local',
     claudeApiKey: env.claudeApiKey ? 'environment' : 'local',

@@ -2288,13 +2288,39 @@ input, select, textarea, button {
   border-color: rgba(239, 68, 68, 0.3);
   color: #fca5a5;
 }
-.re-preview-tag--mode {
-  background: rgba(10, 91, 255, 0.18);
-  border-color: rgba(10, 91, 255, 0.5);
-  color: #60a5fa;
-  font-weight: 700;
+.re-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
+.re-badge-class {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.re-badge-class--strong-match {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+.re-badge-class--stretch-role {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+}
+
+.re-badge-class--hidden-gem {
+  background: rgba(10, 91, 255, 0.1);
+  border: 1px solid rgba(10, 91, 255, 0.25);
+  color: #60a5fa;
+}
 
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */

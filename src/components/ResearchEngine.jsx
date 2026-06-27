@@ -45,6 +45,7 @@ import {
   runGeminiResearch,
   mapResearchResultToOpportunity,
   isGeminiConfigured,
+  isTavilyConfigured,
 } from '../research/researchService';
 import {
   findDuplicateOpportunity,
@@ -317,6 +318,12 @@ export default function ResearchEngine({
       return;
     }
 
+    if (!isTavilyConfigured(settings)) {
+      setPhase('error');
+      setErrorMessage('Tavily Search API key is missing. Add VITE_TAVILY_API_KEY to your .env.local file and restart the development server.');
+      return;
+    }
+
     if (!filters.roleCategories?.length) {
       setPhase('error');
       setErrorMessage('Select at least one role category.');
@@ -328,17 +335,17 @@ export default function ResearchEngine({
     setResults([]);
     setDismissedKeys(new Set());
     setImportedKeys(new Set());
-    setStatusLine('Building research prompt…');
+    setStatusLine('Formulating query and querying Tavily API…');
 
     try {
-      setStatusLine('Contacting Gemini — scanning global remote roles…');
-      const rawItems = await runGeminiResearch(settings.geminiApiKey, filters);
+      setStatusLine('Tavily is scanning Greenhouse, Ashby, Lever & startups for active listings…');
+      const rawItems = await runGeminiResearch(settings.geminiApiKey, settings.tavilyApiKey, filters);
 
       createResearchSessionMeta(filters, rawItems.length);
 
       setResults(rawItems);
       setPhase('results');
-      setStatusLine(`Found ${rawItems.length} opportunities. Review and import.`);
+      setStatusLine(`Found ${rawItems.length} verified opportunities. Review and import.`);
     } catch (err) {
       setPhase('error');
       setErrorMessage(err.message || 'Research failed. Please try again.');
@@ -766,7 +773,14 @@ export default function ResearchEngine({
                           <h3 className="research-card-role">{result.role_title}</h3>
                           <p className="research-card-company">{result.company_name}</p>
                         </div>
-                        <span className="research-card-type">{result.company_type}</span>
+                        <div className="re-card-badges">
+                          {result.classification && (
+                            <span className={`re-badge-class re-badge-class--${result.classification.toLowerCase().replace(/\s+/g, '-')}`}>
+                              {result.classification}
+                            </span>
+                          )}
+                          <span className="research-card-type">{result.company_type}</span>
+                        </div>
                       </div>
                       <div className="research-card-meta">
                         <span>{result.country}</span>

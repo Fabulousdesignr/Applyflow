@@ -231,6 +231,7 @@ export function getSettings() {
     ...stored,
     geminiApiKey: env.geminiApiKey || stored.geminiApiKey || '',
     openaiApiKey: env.openaiApiKey || stored.openaiApiKey || '',
+    tavilyApiKey: env.tavilyApiKey || '', // read strictly from VITE_TAVILY_API_KEY env var
     supabaseUrl: env.supabaseUrl || stored.supabaseUrl || '',
     supabaseAnonKey: env.supabaseAnonKey || stored.supabaseAnonKey || '',
     claudeApiKey: env.claudeApiKey || stored.claudeApiKey || '',

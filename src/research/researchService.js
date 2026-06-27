@@ -2,13 +2,50 @@
 
 import { calculateCompatibilityScore } from '../database/db';
 import { callGeminiGenerateContent, extractGeminiText } from '../config/geminiClient.js';
+import { callTavilySearch } from '../config/tavilyClient.js';
 
 const RESEARCH_TIMEOUT_MS = 90000;
 
 /**
  * @param {import('./researchTypes.js').DEFAULT_RESEARCH_FILTERS} filters
  */
-export function buildResearchPrompt(filters) {
+/**
+ * Formulate 3 optimized search queries to query Tavily in parallel.
+ */
+export function buildOptimizedTavilyQueries(filters) {
+  const queries = [];
+  const baseTitle = filters.roleTitle?.trim() ? `"${filters.roleTitle.trim()}"` : '"Product Designer"';
+  
+  // Geographic and Remote constraints
+  const locationConstraint = filters.countryCity?.trim() 
+    ? `"${filters.countryCity.trim()}"` 
+    : (filters.region && filters.region !== 'Global' ? `"${filters.region}"` : '');
+  
+  const remoteConstraint = filters.remotePreference === 'Global Remote Only'
+    ? '"remote" ("worldwide" OR "anywhere" OR "global")'
+    : '"remote"';
+
+  // Query 1: structured job-boards search (Greenhouse / Ashby / Lever)
+  const boardQuery = `(site:greenhouse.io OR site:ashbyhq.com OR site:lever.co) ${baseTitle} ${remoteConstraint} ${locationConstraint} "hiring"`.trim();
+  queries.push(boardQuery);
+
+  // Query 2: semantic startup / SaaS search
+  const startupQuery = `${baseTitle} ${remoteConstraint} ${locationConstraint} ("startup" OR "SaaS" OR "AI Startup" OR "Fintech") "hiring"`.trim();
+  queries.push(startupQuery);
+
+  // Query 3: general/skills based filter search
+  const skillsList = (filters.coreSkills || []).slice(0, 2).map(s => `"${s}"`).join(' OR ');
+  const skillsPart = skillsList ? `(${skillsList})` : '';
+  const generalQuery = `${baseTitle} ${remoteConstraint} ${locationConstraint} ${skillsPart} "careers" OR "apply"`.trim();
+  queries.push(generalQuery);
+
+  return queries;
+}
+
+/**
+ * Prompt instructions for Gemini to act as a ranking, filtering, and scoring engine.
+ */
+export function buildHybridRankingPrompt(filters, tavilyResults) {
   const roleList = (filters.roleCategories || []).join(', ') || 'Product Designer';
   const toolsList = (filters.aiTools || []).join(', ') || 'Figma';
   const coreSkills = (filters.coreSkills || []).join(', ');
@@ -18,57 +55,70 @@ export function buildResearchPrompt(filters) {
   const workEligibility = (filters.workEligibility || []).join(', ');
 
   const searchModeInstructions = {
-    precision: 'Focus ONLY on highly relevant, exact-fit matches. Prioritize quality over quantity. Every result must strongly align with all stated criteria.',
-    discovery: 'Find a mix of obvious fits AND hidden gems — unconventional companies, emerging markets, and roles the candidate may not have considered but would excel at.',
-    aggressive: 'Include stretch opportunities: roles slightly above the stated experience level, well-funded fast-growing companies, and high-ceiling positions the candidate can still reasonably pursue.',
+    precision: 'Select ONLY the results that are highly relevant, exact-fit matches.',
+    discovery: 'Select a mix of obvious fits and potential high-upside hidden gems from the search results.',
+    aggressive: 'Include stretch opportunities slightly above experience level or at fast-growing teams.',
   };
   const modeInstruction = searchModeInstructions[filters.searchMode] || searchModeInstructions.discovery;
 
-  const salaryContext = filters.minSalary
-    ? `Minimum compensation: ${filters.minSalary} ${filters.currency} ${filters.payFrequency}. Deprioritize roles that clearly cannot meet this.`
-    : '';
+  // Format search results
+  const formattedResults = tavilyResults.map((res, index) => {
+    return `RESULT #${index + 1}:
+Title: ${res.title}
+URL: ${res.url}
+Snippet/Content: ${res.content}`;
+  }).join('\n\n');
 
-  const geoContext = filters.countryCity
-    ? `Geographic preference: ${filters.countryCity} (within ${filters.region || 'Global'} region).`
-    : filters.region && filters.region !== 'Global'
-    ? `Geographic preference: ${filters.region} region.`
-    : 'Open to global remote opportunities.';
+  return `You are an AI-powered job discovery assistant. You will analyze real web search results and match them against the candidate's profile.
 
-  return `You are a tactical remote job research agent specializing in global design and AI product roles.
-
-Run targeted research and return ONLY valid JSON — no markdown, no explanation, no prose.
-
-SEARCH MODE: ${(filters.searchMode || 'discovery').toUpperCase()}
-${modeInstruction}
-
-USER PROFILE:
+CANDIDATE FILTERS:
 - Role target: ${filters.roleTitle ? `"${filters.roleTitle}" (also open to: ${roleList})` : roleList}
 - Experience level: ${filters.experienceLevel}
 - Core skills: ${coreSkills || roleList}
 - AI / tool stack: ${toolsList}
-- ${geoContext}
+- Geographic preference: ${filters.countryCity || filters.region || 'Global'}
 - Work eligibility: ${workEligibility || 'Global remote only'}
 - Remote preference: ${filters.remotePreference}
 - Timezone compatibility: ${filters.timezoneCompatibility}
 - Team size preference: ${filters.teamSize}
-${salaryContext ? `- ${salaryContext}` : ''}
+${filters.minSalary ? `- Minimum compensation: ${filters.minSalary} ${filters.currency} ${filters.payFrequency}` : ''}
 ${industries ? `- Preferred industries: ${industries}` : ''}
 ${companyStages ? `- Preferred company stages: ${companyStages}` : ''}
-${mustHaves ? `- Non-negotiables / must-haves: ${mustHaves}` : ''}
-- Number of opportunities to return: exactly ${filters.resultsCount}
+${mustHaves ? `- Non-negotiables (Must-Haves): ${mustHaves}` : ''}
 
-REQUIREMENTS:
-- Return real or highly plausible active remote roles at companies that hire internationally.
-- Respect the candidate's must-haves as dealbreakers when filtering results.
-- Each object MUST use exactly these keys (all strings):
-  company_name, role_title, country, company_type, remote_status, salary_estimate, hiring_freshness, tools, why_match, career_page, application_link
+SEARCH MODE: ${(filters.searchMode || 'discovery').toUpperCase()}
+${modeInstruction}
 
-- company_type must be one of: AI Startup, SaaS, Fintech, Agency, No-Code Studio
-- tools: comma-separated design/AI tools mentioned for the role
-- why_match: one concise sentence (max 30 words) explaining why this is a strong fit for this exact candidate
-- career_page and application_link: full URLs or empty string if unknown
+INPUT WEB SEARCH RESULTS (These are the ONLY real web opportunities you can return):
+${formattedResults}
 
-Return a JSON object with a single key "opportunities" whose value is an array of ${filters.resultsCount} objects. No other keys at root level.`;
+INSTRUCTIONS:
+1. Filter the web search results based on the candidate's profile. Remove any that are clearly not remote or mismatch the role target.
+2. Rank the best fits up to a maximum of ${filters.resultsCount || 10} opportunities.
+3. For each matched opportunity, generate a structured object.
+4. **CRITICAL REQUIREMENT:** The "application_link" property in the output MUST be the exact, original, valid URL from the search result. Do not alter, shorten, or hallucinate URLs.
+5. Do NOT invent or hallucinate any factual details. If a company name is not mentioned, use the one from the search title/url.
+6. Evaluate and classify each opportunity quality as one of:
+   - "Strong Match": highly aligned with all core criteria and preferences
+   - "Stretch Role": slightly above experience/level or requires extra stack adaptation
+   - "Hidden Gem": unconventional company fit or high-quality listing that is less visible
+7. Calculate a custom match_score from 0 to 100 representing compatibility.
+
+Each object MUST use exactly these keys (all strings):
+company_name, role_title, country, company_type, remote_status, salary_estimate, hiring_freshness, tools, why_match, career_page, application_link, classification, match_score
+
+- company_name: extract the company name from the title or description (e.g. "Senior UX Designer at Acme" -> Acme)
+- role_title: extract the clean job title (e.g. "UX Designer")
+- country: country of hiring (or Global Remote)
+- company_type: must be one of: AI Startup, SaaS, Fintech, Agency, No-Code Studio (infer from content)
+- remote_status: describe remote status (e.g. Fully Remote, Remote First, etc.)
+- tools: comma-separated design/AI tools mentioned in the job description/snippet
+- why_match: one concise sentence (max 30 words) explaining why this real job is a good fit for this candidate
+- career_page and application_link: must be the exact URLs from the search results
+- classification: must be exactly one of: "Strong Match", "Stretch Role", "Hidden Gem"
+- match_score: integer from 0 to 100 representing the compatibility score
+
+Return ONLY valid JSON. Return a JSON object with a single key "opportunities" whose value is an array of matched objects. No other keys or markdown fences at root level.`;
 }
 
 function stripJsonFences(text) {
@@ -174,9 +224,14 @@ export function mapResearchResultToOpportunity(result, filters) {
     follow_up_date: '',
     applied_date: '',
     interview_stage: '',
+    classification: String(result.classification || 'Strong Match').trim(),
   };
 
-  opp.compatibility_score = calculateCompatibilityScore(opp);
+  const scoreFromGemini = Number(result.match_score);
+  opp.compatibility_score = !isNaN(scoreFromGemini) && scoreFromGemini >= 0 && scoreFromGemini <= 100
+    ? scoreFromGemini
+    : calculateCompatibilityScore(opp);
+
   return opp;
 }
 
@@ -185,21 +240,66 @@ export function mapResearchResultToOpportunity(result, filters) {
  * @param {object} filters
  * @returns {Promise<Array<Record<string, string>>>}
  */
-export async function runGeminiResearch(apiKey, filters) {
+/**
+ * Execute web search via Tavily, then rank/cross-reference via Gemini.
+ * @param {string} geminiApiKey
+ * @param {string} tavilyApiKey
+ * @param {object} filters
+ * @returns {Promise<Array<Record<string, string>>>}
+ */
+export async function runGeminiResearch(geminiApiKey, tavilyApiKey, filters) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), RESEARCH_TIMEOUT_MS);
 
   try {
+    // 1. Perform 3 live web search queries in parallel using Tavily
+    const queries = buildOptimizedTavilyQueries(filters);
+    const searchDepth = 'basic'; // keep basic to optimize free credits
+    
+    const searchPromises = queries.map((q) =>
+      callTavilySearch(tavilyApiKey, {
+        query: q,
+        search_depth: searchDepth,
+        max_results: 8,
+      }).catch((err) => {
+        console.warn(`[Applyflow] Search query "${q}" failed:`, err);
+        return { results: [] };
+      })
+    );
+
+    const responses = await Promise.all(searchPromises);
+
+    // Combine and deduplicate by URL
+    const seenUrls = new Set();
+    const uniqueResults = [];
+
+    for (const resp of responses) {
+      if (resp?.results) {
+        for (const res of resp.results) {
+          if (res.url && !seenUrls.has(res.url)) {
+            seenUrls.add(res.url);
+            uniqueResults.push(res);
+          }
+        }
+      }
+    }
+
+    if (!uniqueResults.length) {
+      throw new Error('Tavily returned no search results for this query. Try broadening your keywords/categories.');
+    }
+
+    // 2. Feed retrieved search results into Gemini for scoring and ranking
+    const prompt = buildHybridRankingPrompt(filters, uniqueResults);
     const { data } = await callGeminiGenerateContent(
-      apiKey,
+      geminiApiKey,
       {
         generationConfig: {
           responseMimeType: 'application/json',
-          temperature: 0.4,
+          temperature: 0.3,
         },
         contents: [
           {
-            parts: [{ text: buildResearchPrompt(filters) }],
+            parts: [{ text: prompt }],
           },
         ],
       },
@@ -214,7 +314,7 @@ export async function runGeminiResearch(apiKey, filters) {
 
     const items = parseResearchResponse(text);
     if (!items.length) {
-      throw new Error('No opportunities found. Try broader filters or a higher results count.');
+      throw new Error('No compatible opportunities found from the web search. Try broader filters.');
     }
 
     return items.slice(0, filters.resultsCount || 10);
@@ -255,3 +355,8 @@ export async function testGeminiConnection(apiKey) {
 export function isGeminiConfigured(settings) {
   return Boolean(settings?.geminiApiKey?.trim());
 }
+
+export function isTavilyConfigured(settings) {
+  return Boolean(settings?.tavilyApiKey?.trim());
+}
+
